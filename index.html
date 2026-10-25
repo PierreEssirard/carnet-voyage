@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Carnet de voyages — Pierre Essirard</title>
+  <meta name="description" content="Montréal et mes road trips en Amérique du Nord, étape par étape.">
+  <meta name="theme-color" content="#07090d">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- MapLibre (carte vectorielle + bâtiments 3D, sans clé API) -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+
+  <!-- Styles du site -->
+  <link href="css/style.css" rel="stylesheet">
+  <link href="css/prive.css" rel="stylesheet">
+</head>
+<body>
+  <div id="progress" aria-hidden="true"></div>
+
+  <div id="mapwrap">
+    <div id="map" aria-label="Carte interactive des voyages"></div>
+    <div class="maptag" aria-live="polite">
+      <span class="maptag-dot"></span>
+      <span id="maptag-txt">Montréal</span>
+    </div>
+    <button id="map-toggle" class="map-toggle" type="button" aria-label="Réduire la carte" title="Réduire la carte">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path class="ic-min" d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>
+        <path class="ic-max" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+      </svg>
+    </button>
+  </div>
+
+  <main id="story"></main>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/prive.js"></script>
+</body>
+</html>
