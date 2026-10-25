@@ -6,12 +6,12 @@
    ========================================================= */
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyCsPpBvsnI_qbIVP3qStdCUxPq16e60zk8",
-  authDomain: "COLLE_TON_PROJET.firebaseapp.com",
-  projectId: "COLLE_TON_PROJET",
-  storageBucket: "COLLE_TON_PROJET.firebasestorage.app",
-  messagingSenderId: "COLLE_TON_SENDER_ID",
-  appId: "COLLE_TON_APP_ID",
+apiKey: "AIzaSyCsPpBvsnI_qbIVP3qStdCUxPq16e60zk8",
+  authDomain: "carnet-voyages-5b828.firebaseapp.com",
+  projectId: "carnet-voyages-5b828",
+  storageBucket: "carnet-voyages-5b828.firebasestorage.app",
+  messagingSenderId: "1049053312001",
+  appId: "1:1049053312001:web:bb5e55d381763c8e127c00"
 };
 
 /* Le compte créé dans Firebase > Authentication.
