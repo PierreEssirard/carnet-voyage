@@ -47,10 +47,7 @@ export const MONTREAL = {
       a:  { nom: "Vieux-Port", lon: -73.5530, lat: 45.5075 },
       transport: "pied",
       texte: "Texte à compléter.",
-      photos: [
-        "assets/photos/vieux-port-1.jpg",
-        "assets/photos/vieux-port-2.jpg",
-      ],
+      photos: [],
       video: "",
     },
     {
@@ -64,11 +61,7 @@ export const MONTREAL = {
       a:  { nom: "Lac aux Castors", lon: -73.5960, lat: 45.4980 },
       transport: "pied",
       texte: "Texte à compléter.",
-      photos: [
-        "assets/photos/mont-royal-1.jpg",
-        "assets/photos/mont-royal-2.jpg",
-        "assets/photos/mont-royal-3.jpg",
-      ],
+      photos: [],
       video: "",
     },
     {
@@ -89,7 +82,7 @@ export const MONTREAL = {
       a:  { nom: "La Banquise", lon: -73.5747, lat: 45.5254 },
       transport: "pied",
       texte: "Texte à compléter.",
-      photos: ["assets/photos/banquise-1.jpg"],
+      photos: [],
       video: "",
     },
     {
