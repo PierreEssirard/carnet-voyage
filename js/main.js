@@ -39,6 +39,33 @@ bouton.addEventListener("click", () => {
   setTimeout(() => { if (pret) { map.resize(); afficher(vueActuelle, true); } }, 520);
 });
 
+/* Téléphone : glisser la carte vers la gauche ou la droite la range sur le côté,
+   glisser dans l'autre sens (ou toucher la languette) la ramène */
+const mobile = matchMedia("(max-width: 800px)");
+const cadreCarte = document.getElementById("mapwrap");
+const ranger = (cote) => {
+  document.body.classList.remove("carte-cote-g", "carte-cote-d");
+  if (cote) document.body.classList.add(`carte-cote-${cote}`);
+};
+const coteActuel = () => document.body.classList.contains("carte-cote-g") ? "g"
+  : document.body.classList.contains("carte-cote-d") ? "d" : null;
+let toucher = null;
+cadreCarte.addEventListener("touchstart", (e) => {
+  toucher = mobile.matches && e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { capture: true, passive: true });
+cadreCarte.addEventListener("touchend", (e) => {
+  if (!toucher) return;
+  const dx = e.changedTouches[0].clientX - toucher.x;
+  const dy = e.changedTouches[0].clientY - toucher.y;
+  toucher = null;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // pas un glissement horizontal
+  const cote = coteActuel();
+  if (!cote) ranger(dx < 0 ? "g" : "d");
+  else if ((cote === "g") === (dx > 0)) ranger(null);
+}, { capture: true, passive: true });
+document.getElementById("map-poignee").addEventListener("click", () => ranger(null));
+mobile.addEventListener("change", (e) => { if (!e.matches) ranger(null); });
+
 /* Le défilement est suivi tout de suite, même si la carte charge encore */
 suivreDefilement("[data-view]", (vue) => afficher(vue));
 

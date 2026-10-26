@@ -168,6 +168,24 @@ a { color: inherit; }
 .map-toggle:hover { background: rgba(30, 36, 46, .9); transform: scale(1.06); }
 .map-toggle:focus-visible { outline: 2px solid var(--c-active); outline-offset: 2px; }
 .map-toggle .ic-max { display: none; }
+
+/* Languette pour ramener la carte rangée sur le côté (téléphone) */
+.map-poignee {
+  position: absolute;
+  top: 0; bottom: 0;
+  z-index: 3;
+  width: 46px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: rgba(10, 13, 18, .82);
+  color: var(--c-active);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
 .carte-mini .map-toggle .ic-min { display: none; }
 .carte-mini .map-toggle .ic-max { display: inline; }
 
@@ -678,16 +696,25 @@ video { width: 100%; display: block; background: #000; }
   .carte-mini .maptag { left: auto; right: 10px; max-width: calc(100% - 70px); }
   .maplibregl-ctrl-top-left { display: none; } /* plus de place, on zoome à deux doigts */
 
+  /* Carte rangée sur le côté (glissement horizontal) : seule une languette dépasse */
+  #mapwrap { transition: height .5s var(--ease), transform .45s var(--ease); }
+  .carte-cote-g #mapwrap { transform: translateX(calc(-100% + 46px - var(--gap))); }
+  .carte-cote-d #mapwrap { transform: translateX(calc(100% - 46px + var(--gap))); }
+  .carte-cote-g main::before, .carte-cote-d main::before { opacity: 0; }
+  .carte-cote-g .map-poignee, .carte-cote-d .map-poignee { opacity: 1; pointer-events: auto; }
+  .carte-cote-g .map-poignee { left: auto; right: 0; }
+  .carte-cote-d .map-poignee { left: 0; right: auto; }
+
   /* Socle opaque sous la carte : le texte disparaît derrière, on ne le voit pas défiler autour */
   main::before {
     content: "";
     position: fixed;
     left: 0; right: 0; bottom: 0;
+    transition: height .5s var(--ease), opacity .4s;
     height: calc(var(--map-h) + var(--gap) * 2 + var(--safe-b) + 24px);
     z-index: 3;
     pointer-events: none;
     background: linear-gradient(to top, var(--bg) calc(100% - 24px), transparent);
-    transition: height .5s var(--ease);
   }
 
   main {

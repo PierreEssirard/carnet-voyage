@@ -210,6 +210,8 @@ export const TRIPS = [
     etapes: [
       { nom: "Parc national de la Mauricie", lon: -72.9800, lat: 46.7400, zoom: 11.5, pitch: 62,
         texte: "Texte à compléter.", photos: [], video: "" },
+      { nom: "La Tuque — hydravion", lon: -72.7830, lat: 47.4380, zoom: 12, pitch: 60, bearing: 15,
+        texte: "Vol en hydravion au-dessus de La Tuque. Texte à compléter.", photos: [], video: "" },
     ],
   },
 ];
