@@ -60,12 +60,14 @@ TRIPS.forEach((t, i) => {
   carte.setLigne(`trip-${i}`, pointsTrip[i]); // provisoire (ligne droite)
 });
 MONTREAL.parcours.forEach((_, k) => carte.ajouterLigne(`mtl-${k}`, MONTREAL.couleur, 4));
+/* Départ, arrêts intermédiaires (par) et arrivée d'un trajet en ville */
+const lieuxParcours = (s) => [s.de, ...(s.par || []), s.a];
 
 /* Repères */
 const repBase = carte.repere(ll(BASE), BASE.nom, MONTREAL.couleur, { base: true });
 const repTrips = TRIPS.map((t) => t.etapes.map((e) => carte.repere(ll(e), e.nom, t.couleur)));
 const repMtl = new Map();
-MONTREAL.parcours.forEach((s) => [s.de, s.a].forEach((p) => {
+MONTREAL.parcours.forEach((s) => lieuxParcours(s).forEach((p) => {
   if (!repMtl.has(p.nom)) repMtl.set(p.nom, carte.repere(ll(p), p.nom, MONTREAL.couleur));
 }));
 
@@ -75,7 +77,7 @@ TRIPS.forEach((t, i) => {
 });
 const pretsMtl = MONTREAL.parcours.map((s, k) => {
   const profil = (TRANSPORTS[s.transport] || TRANSPORTS.pied).profil;
-  return itineraire([ll(s.de), ll(s.a)], profil).then((coords) => carte.setLigne(`mtl-${k}`, coords));
+  return itineraire(lieuxParcours(s).map(ll), profil).then((coords) => carte.setLigne(`mtl-${k}`, coords));
 });
 
 /* 4. Ce que montre la carte pour chaque partie du récit */
@@ -132,7 +134,8 @@ function afficher(vue, forcer = false) {
   repMtl.forEach((el) => etat(el, enVille ? "on" : "hidden"));
   if (type === "mtl-step") {
     const s = MONTREAL.parcours[i];
-    repMtl.forEach((el, nom) => etat(el, nom === s.de.nom || nom === s.a.nom ? "on" : "dot"));
+    const noms = lieuxParcours(s).map((p) => p.nom);
+    repMtl.forEach((el, nom) => etat(el, noms.includes(nom) ? "on" : "dot"));
   }
   if (type !== "mtl-step") carte.cacherMobile();
 
@@ -149,7 +152,7 @@ function afficher(vue, forcer = false) {
       carte.voler(MONTREAL.camera, { orbite: 3 });
       break;
     case "mtl-intro": {
-      const pts = MONTREAL.parcours.flatMap((s) => [ll(s.de), ll(s.a)]);
+      const pts = MONTREAL.parcours.flatMap((s) => lieuxParcours(s).map(ll));
       if (pts.length) carte.cadrer(pts, { pitch: 55, bearing: -25, maxZoom: 15 });
       else carte.voler(MONTREAL.camera);
       break;
