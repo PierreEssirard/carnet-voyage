@@ -5,12 +5,21 @@
 
 import { firebaseConfig, COMPTE, SUFFIXE, VERSION_SDK } from "./firebase-config.js";
 import { MONTREAL, TRIPS } from "./data.js";
+import { cleCarnet } from "./story.js";
 
-const DOSSIERS = [
-  { id: "montreal", nom: MONTREAL.titre },
-  ...TRIPS.map((t, i) => ({ id: `road-trip-${i + 1}`, nom: `${t.kicker} · ${t.titre}` })),
-  { id: "divers", nom: "Divers" },
+/* Dossiers « carnet/… » : photos affichées dans les sections du site (visibles par tous).
+   Dossiers « prive/… » : visibles uniquement après le code. */
+const CARNET = [
+  { id: `carnet/${cleCarnet(MONTREAL.titre)}`, nom: `${MONTREAL.titre} (accueil)` },
+  ...MONTREAL.parcours.map((s) => ({ id: `carnet/${cleCarnet(`${MONTREAL.titre}-${s.titre}`)}`, nom: `${MONTREAL.titre} · ${s.titre}` })),
+  ...TRIPS.flatMap((t) => t.etapes.map((e) => ({ id: `carnet/${cleCarnet(e.nom)}`, nom: `${t.kicker} · ${e.nom}` }))),
 ];
+const PRIVE = [
+  { id: "prive/montreal", nom: MONTREAL.titre },
+  ...TRIPS.map((t, i) => ({ id: `prive/road-trip-${i + 1}`, nom: `${t.kicker} · ${t.titre}` })),
+  { id: "prive/divers", nom: "Divers" },
+];
+const option = (d) => `<option value="${d.id}">${d.nom}</option>`;
 const configure = !String(firebaseConfig.apiKey || "").startsWith("COLLE");
 const estVideo = (nom) => /\.(mp4|mov|webm|m4v)$/i.test(nom);
 const estHeic = (f) => /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
@@ -97,7 +106,8 @@ panneau.innerHTML = `
     </div>
     <div class="prive-actions">
       <select class="prive-dossier" aria-label="Dossier">
-        ${DOSSIERS.map((d) => `<option value="${d.id}">${d.nom}</option>`).join("")}
+        <optgroup label="📖 Carnet — affiché sur le site">${CARNET.map(option).join("")}</optgroup>
+        <optgroup label="🔒 Privé — toi seul">${PRIVE.map(option).join("")}</optgroup>
       </select>
       <label class="prive-btn prive-ajout">
         <input type="file" accept="image/*,video/*,.heic,.heif" multiple hidden>
@@ -107,6 +117,7 @@ panneau.innerHTML = `
       <button type="button" class="prive-btn prive-fermer" aria-label="Fermer">✕</button>
     </div>
   </header>
+  <p class="prive-portee"></p>
   <div class="prive-envois"></div>
   <div class="prive-vide">Aucune photo dans ce dossier pour l’instant.</div>
   <div class="galerie prive-grille"></div>
@@ -123,6 +134,7 @@ const grille = $(".prive-grille", panneau);
 const vide = $(".prive-vide", panneau);
 const envois = $(".prive-envois", panneau);
 const champRemplacer = $(".prive-remplacer", panneau);
+const portee = $(".prive-portee", panneau);
 
 /* ---------- Ouvrir / fermer ---------- */
 function ouvrirModal() {
@@ -239,13 +251,18 @@ selDossier.addEventListener("change", chargerGalerie);
 
 async function chargerGalerie() {
   const dossier = selDossier.value;
+  const public_ = dossier.startsWith("carnet/");
+  portee.className = "prive-portee " + (public_ ? "publique" : "secrete");
+  portee.textContent = public_
+    ? "📖 Ces photos s’affichent dans la section correspondante du carnet, visibles par tous."
+    : "🔒 Ces photos ne sont visibles qu’ici, après le code.";
   grille.innerHTML = "";
   vide.className = "prive-vide";
   vide.textContent = "Chargement…";
   vide.hidden = false;
   try {
     const { storage, S } = await firebase();
-    const res = await S.listAll(S.ref(storage, `prive/${dossier}`));
+    const res = await S.listAll(S.ref(storage, dossier));
     if (selDossier.value !== dossier) return; // dossier changé entre-temps
     const items = res.items.sort((a, b) => b.name.localeCompare(a.name)); // plus récentes d'abord
     const infos = await Promise.all(items.map(async (it) => {
@@ -309,6 +326,7 @@ async function supprimer(info, fig) {
     await fb.S.deleteObject(info.item);
     fig.classList.add("part");
     setTimeout(() => { fig.remove(); vide.hidden = grille.children.length > 0; }, 350);
+    rafraichirSection(info.item.parent.fullPath);
   } catch (err) {
     console.error(err);
     alert("Suppression impossible. " + explication(err));
@@ -340,6 +358,7 @@ function editerLegende(info, fig, legende) {
       await fb.S.updateMetadata(info.item, { customMetadata: { legende: texte } });
       info.legende = texte;
       legende.textContent = texte;
+      rafraichirSection(info.item.parent.fullPath);
       const img = fig.querySelector("img");
       if (img) img.alt = texte || nomLisible(info.item.name);
     } catch (err) {
@@ -378,14 +397,17 @@ champRemplacer.addEventListener("change", async () => {
     await fb.S.deleteObject(info.item).catch((e) => console.error(e));
   }
   chargerGalerie();
+  rafraichirSection(info.item.parent.fullPath);
 });
 
 /* ---------- Envoi de fichiers ---------- */
 $(".prive-ajout input", panneau).addEventListener("change", async (e) => {
   const fichiers = [...e.target.files];
   e.target.value = "";
+  const dossier = selDossier.value;
   for (const f of fichiers) await envoyer(f);
   chargerGalerie();
+  rafraichirSection(dossier);
 });
 
 const propre = (nom) => nom.normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -457,7 +479,7 @@ async function envoyer(f, options = {}) {
   try {
     const { storage, S } = await firebase();
     const { blob, nom } = await preparer(f);
-    const dossier = options.dossier || `prive/${selDossier.value}`;
+    const dossier = options.dossier || selDossier.value;
     const chemin = `${dossier}/${options.horodatage || Date.now()}-${propre(nom)}`;
     const meta = { contentType: blob.type || f.type || undefined };
     if (options.legende) meta.customMetadata = { legende: options.legende };
@@ -482,4 +504,64 @@ async function envoyer(f, options = {}) {
     echec(err);
     return null;
   }
+}
+
+/* =========================================================
+   PHOTOS DU CARNET : affichage public dans les sections du site
+   ========================================================= */
+
+/** Remplit la galerie d'une section avec les photos du dossier « carnet/… ». */
+async function remplirSection(galerie) {
+  const { storage, S } = await firebase();
+  const dossier = `carnet/${galerie.dataset.carnet}`;
+  const res = await S.listAll(S.ref(storage, dossier));
+  const items = res.items.sort((a, b) => a.name.localeCompare(b.name)); // ordre d'envoi
+  const infos = await Promise.all(items.map(async (it) => {
+    const [url, meta] = await Promise.all([S.getDownloadURL(it), S.getMetadata(it).catch(() => ({}))]);
+    return { nom: it.name, url, legende: meta.customMetadata?.legende || "" };
+  }));
+
+  // on enlève les anciennes photos Firebase et les emplacements vides
+  galerie.querySelectorAll(".depuis-firebase, .ph").forEach((el) => el.remove());
+  for (const info of infos) {
+    const fig = document.createElement("figure");
+    fig.className = "depuis-firebase";
+    if (estVideo(info.nom)) {
+      fig.innerHTML = `<video src="${info.url}" controls playsinline preload="metadata"></video>`;
+    } else {
+      const img = document.createElement("img");
+      img.src = info.url;
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.alt = info.legende || nomLisible(info.nom);
+      fig.appendChild(img);
+    }
+    if (info.legende) {
+      const cap = document.createElement("figcaption");
+      cap.textContent = info.legende;
+      fig.appendChild(cap);
+    }
+    galerie.appendChild(fig);
+  }
+  // section sans aucune photo : on remet les emplacements vides
+  if (!galerie.children.length) {
+    galerie.innerHTML = [1, 2, 3].map(() => `<div class="ph"><span>📷 Photo à ajouter</span></div>`).join("");
+  }
+  galerie.className = galerie.className.replace(/\bn-\d\b/, `n-${Math.min(galerie.children.length, 5)}`);
+}
+
+function rafraichirSection(dossier) {
+  if (!dossier.startsWith("carnet/")) return;
+  const g = document.querySelector(`.galerie[data-carnet="${dossier.slice(7)}"]`);
+  if (g) remplirSection(g).catch((e) => console.warn("Section non rafraîchie", e));
+}
+
+/* Au chargement du site (sans ralentir l'affichage) */
+if (configure) {
+  const lancer = () => {
+    document.querySelectorAll(".galerie[data-carnet]").forEach((g) => {
+      remplirSection(g).catch((e) => console.warn(`Photos du carnet indisponibles (${g.dataset.carnet})`, e.code || e));
+    });
+  };
+  "requestIdleCallback" in window ? requestIdleCallback(lancer, { timeout: 2500 }) : setTimeout(lancer, 1200);
 }

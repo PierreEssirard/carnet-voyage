@@ -2,14 +2,18 @@
 
 const esc = (s = "") => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function medias({ photos = [], video = "" }, nom) {
+/** Nom du dossier Firebase « carnet/… » relié à une section (ex. « Québec » → « quebec »). */
+export const cleCarnet = (nom) => nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function medias({ photos = [], video = "" }, nom, cle) {
   const items = photos.length
     ? photos.map((u, k) => `<figure><img src="${esc(u)}" alt="${esc(nom)} — photo ${k + 1}" loading="lazy" decoding="async"></figure>`)
     : [1, 2, 3].map(() => `<div class="ph"><span>📷 Photo à ajouter</span></div>`);
   const vid = video
     ? `<div class="video"><video controls playsinline preload="none" src="${esc(video)}"></video></div>`
     : "";
-  return `<div class="galerie n-${Math.min(items.length, 5)}">${items.join("")}</div>${vid}`;
+  return `<div class="galerie n-${Math.min(items.length, 5)}" data-carnet="${esc(cle)}">${items.join("")}</div>${vid}`;
 }
 
 export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
@@ -42,7 +46,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
     <h2>${esc(MONTREAL.titre)}</h2>
     <p>${esc(MONTREAL.texte)}</p>
     ${MONTREAL.parcours.length ? `<p class="m">${MONTREAL.parcours.length} trajets dans la ville</p>` : ""}
-    ${medias(MONTREAL, MONTREAL.titre)}
+    ${medias(MONTREAL, MONTREAL.titre, cleCarnet(MONTREAL.titre))}
   </section>`;
 
   MONTREAL.parcours.forEach((s, k) => {
@@ -53,7 +57,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
     <h3>${esc(s.titre)}</h3>
     <div class="transport"><span>${tr.emoji}</span>${tr.label}<i></i>${esc(s.de.nom)} → ${esc(s.a.nom)}</div>
     <p>${esc(s.texte)}</p>
-    ${medias(s, s.titre)}
+    ${medias(s, s.titre, cleCarnet(`${MONTREAL.titre}-${s.titre}`))}
   </article>`;
   });
 
@@ -80,7 +84,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
     <div class="k">Étape ${j + 1}/${t.etapes.length} · ${esc(t.kicker)}</div>
     <h3>${esc(e.nom)}</h3>
     <p>${esc(e.texte)}</p>
-    ${medias(e, e.nom)}
+    ${medias(e, e.nom, cleCarnet(e.nom))}
   </article>`;
     });
   });

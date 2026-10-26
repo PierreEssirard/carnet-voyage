@@ -190,6 +190,32 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
 .prive-ajout:hover { background: color-mix(in srgb, var(--c-active) 85%, #fff); }
 .prive-fermer { width: 42px; justify-content: center; padding: 0; }
 
+/* Portée du dossier choisi */
+.prive-portee {
+  max-width: 1200px;
+  margin: -8px auto 14px;
+  font-size: .85rem;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.prive-portee.publique { color: #9fd3a8; background: rgba(63, 185, 80, .08); border-color: rgba(63, 185, 80, .25); }
+.prive-portee.secrete { color: var(--mute); background: rgba(255, 255, 255, .03); }
+.prive-dossier optgroup { background: #11161e; color: var(--mute); font-style: normal; }
+
+/* Légendes des photos du carnet (sections publiques) */
+.galerie figure.depuis-firebase figcaption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  padding: 26px 14px 10px;
+  font-size: .85rem;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .75));
+  pointer-events: none;
+}
+.galerie figure.depuis-firebase video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+
 /* Envois en cours */
 .prive-envois { max-width: 1200px; margin: 0 auto; display: grid; gap: 6px; }
 .prive-envoi {
