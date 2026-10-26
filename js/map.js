@@ -3,7 +3,7 @@
    Pensée pour rester légère : pas de relief 3D par défaut, résolution
    plafonnée, animations qui ne recalculent pas la géométrie. */
 
-import { cumul, along, bearing, angleDiff, lineFeature } from "./geo.js";
+import { cumul, along, bearing, angleDiff, lineFeature } from "./geo.js?v=5";
 
 /* ---------- Réglages ---------- */
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
@@ -13,17 +13,17 @@ const DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}
 
 /* Palette de nuit */
 const NUIT = {
-  fond:      "#080b10",
-  sol:       "#0d1218",
-  vert:      "#0c1512",
-  eau:       "#0a1824",
-  eauLigne:  "#12273a",
-  route:     "#1b232e",
-  routeMaj:  "#2a3442",
-  frontiere: "#344152",
-  bati:      "#121821",
-  texte:     "#6f7c8b",
-  halo:      "#080b10",
+  fond:      "#1c1c1e",
+  sol:       "#1f1f21",
+  vert:      "#1e2a21",
+  eau:       "#14273a",
+  eauLigne:  "#1c3550",
+  route:     "#2e2e31",
+  routeMaj:  "#3d3d41",
+  frontiere: "#4a4a4e",
+  bati:      "#2a2a2d",
+  texte:     "#8e8e93",
+  halo:      "#1c1c1e",
 };
 
 export const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -113,7 +113,7 @@ function batiments3D(map) {
   const paint = {
     // plus c'est haut, plus ça s'illumine
     "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0],
-      0, "#111823", 40, "#1a2331", 120, "#26304a", 250, "#3a3a6a"],
+      0, "#2a2a2d", 40, "#313134", 120, "#38383c", 250, "#424246"],
     "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
     "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
     "fill-extrusion-opacity": 0.92,
@@ -138,9 +138,9 @@ function relief(map) {
 function ciel(map) {
   try {
     map.setSky({
-      "sky-color": "#0b1220",
-      "horizon-color": "#1b2740",
-      "fog-color": "#080b10",
+      "sky-color": "#0e0e10",
+      "horizon-color": "#1c1c1e",
+      "fog-color": "#1c1c1e",
       "sky-horizon-blend": 0.6,
       "horizon-fog-blend": 0.7,
       "fog-ground-blend": 0.4,
@@ -157,7 +157,7 @@ function degrade(couleur, p) {
   if (p <= 0) return ["interpolate", ["linear"], ["line-progress"], 0, VIDE, 1, VIDE];
   const stops = [0, couleur];
   if (p > 0.06) stops.push(p - 0.04, couleur);
-  stops.push(p, "#ffffff", Math.min(0.9999, p + 0.0005), VIDE);
+  stops.push(p, couleur, Math.min(0.9999, p + 0.0005), VIDE);
   if (p + 0.0005 < 0.9999) stops.push(1, VIDE);
   return ["interpolate", ["linear"], ["line-progress"], ...stops];
 }
@@ -187,7 +187,7 @@ export class Carte {
     const layout = { "line-cap": "round", "line-join": "round" };
     const g = degrade(couleur, 1);
     this.map.addLayer({ id: `${id}-halo`, type: "line", source: id, layout,
-      paint: { "line-gradient": g, "line-width": largeur * 5, "line-blur": largeur * 4, "line-opacity": 0,
+      paint: { "line-gradient": g, "line-width": largeur + 4, "line-blur": 0, "line-opacity": 0,
                "line-opacity-transition": { duration: 600 } } });
     this.map.addLayer({ id, type: "line", source: id, layout,
       paint: { "line-gradient": g, "line-width": largeur, "line-opacity": 0,
@@ -207,7 +207,7 @@ export class Carte {
 
   opacite(id, v) {
     this.map.setPaintProperty(id, "line-opacity", v);
-    this.map.setPaintProperty(`${id}-halo`, "line-opacity", v * 0.45);
+    this.map.setPaintProperty(`${id}-halo`, "line-opacity", v * 0.25);
   }
 
   /** Dessine progressivement une ligne (sans toucher à la géométrie : léger). */

@@ -30,7 +30,7 @@ export const BASE = { nom: "Montréal", lon: -73.5673, lat: 45.5017 };
 export const MONTREAL = {
   titre: "Montréal",
   sousTitre: "Mon camp de base pendant 4 mois",
-  couleur: "#c8472b",
+  couleur: "#ff453a",
   texte: "La ville où j’ai vécu pendant mon séjour. Texte à compléter.",
   photos: [],
   video: "",
@@ -144,7 +144,7 @@ export const TRIPS = [
     titre: "Québec, Jacques-Cartier & Tadoussac",
     kicker: "Road trip 1",
     dates: "Dates à ajouter",
-    couleur: "#2f6fb0",
+    couleur: "#0a84ff",
     boucle: true,
     intro: "Cap au nord-est : la Vieille Capitale, la vallée de la Jacques-Cartier puis le fjord à Tadoussac.",
     etapes: [
@@ -160,7 +160,7 @@ export const TRIPS = [
     titre: "Toronto, Niagara, Sandbanks & Ottawa",
     kicker: "Road trip 2",
     dates: "Dates à ajouter",
-    couleur: "#d0761f",
+    couleur: "#ff9f0a",
     boucle: true,
     intro: "Tour de l’Ontario : la grande ville, les chutes, les dunes du lac Ontario et la capitale fédérale.",
     etapes: [
@@ -178,7 +178,7 @@ export const TRIPS = [
     titre: "New York, Long Island, Lake George & Whiteface",
     kicker: "Road trip 3",
     dates: "Dates à ajouter",
-    couleur: "#7a4fb3",
+    couleur: "#bf5af2",
     boucle: true,
     intro: "Descente vers New York, la côte de Long Island, puis remontée par les Adirondacks.",
     etapes: [
@@ -197,7 +197,7 @@ export const TRIPS = [
     titre: "La Mauricie",
     kicker: "Road trip 4",
     dates: "Dates à ajouter",
-    couleur: "#2e8b57",
+    couleur: "#30d158",
     boucle: true,
     intro: "Forêts, lacs et nature au parc national de la Mauricie.",
     etapes: [

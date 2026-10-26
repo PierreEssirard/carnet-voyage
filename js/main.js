@@ -1,16 +1,31 @@
 /* Point d'entrée : relie le récit, la carte, le défilement et les effets. */
 
-import { BASE, MONTREAL, TRIPS, TRANSPORTS } from "./data.js";
-import { renderStory } from "./story.js";
-import { createMap, Carte } from "./map.js";
-import { itineraire } from "./routing.js";
-import { suivreDefilement } from "./scroll.js";
-import { apparitions, barreProgression, visionneuse } from "./effets.js";
-import { ll } from "./geo.js";
+import { BASE, MONTREAL, TRIPS, TRANSPORTS } from "./data.js?v=5";
+import { renderStory } from "./story.js?v=5";
+import { createMap, Carte } from "./map.js?v=5";
+import { itineraire } from "./routing.js?v=5";
+import { suivreDefilement } from "./scroll.js?v=5";
+import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, curseurPhoto, badgeRotatif, suiviDefilement,
+  rotateurHero, apercuSommaire, compteurs, brouillage, aimants, attaques } from "./effets.js?v=5";
+import { ll } from "./geo.js?v=5";
+import { intro } from "./intro.js?v=5";
+import { odometre } from "./odometre.js?v=5";
 
 /* 1. Le récit et les effets (avant la carte : le texte s'affiche tout de suite) */
 renderStory(document.getElementById("story"), { MONTREAL, TRIPS, TRANSPORTS, BASE });
+titresAnimes();
+attaques();
 apparitions();
+rotateurHero();
+intro();
+apercuSommaire();
+compteurs();
+brouillage();
+aimants();
+badgeRotatif();
+barreNav();
+curseurPhoto();
+suiviDefilement();
 barreProgression();
 visionneuse();
 
@@ -67,7 +82,8 @@ document.getElementById("map-poignee").addEventListener("click", () => ranger(nu
 mobile.addEventListener("change", (e) => { if (!e.matches) ranger(null); });
 
 /* Le défilement est suivi tout de suite, même si la carte charge encore */
-suivreDefilement("[data-view]", (vue) => afficher(vue));
+const majKm = odometre();
+suivreDefilement("[data-view]", (vue) => { majKm(vue); afficher(vue); });
 
 /* 2. La carte (démarre en 3D sur Montréal) */
 map = await createMap("map", MONTREAL.camera);
@@ -117,11 +133,11 @@ function legende(type, i, j) {
     case "mtl-intro": return { txt: "Montréal", c: MONTREAL.couleur };
     case "mtl-step": {
       const s = MONTREAL.parcours[i];
-      return { txt: `${(TRANSPORTS[s.transport] || TRANSPORTS.pied).emoji} ${s.de.nom} → ${s.a.nom}`, c: MONTREAL.couleur };
+      return { txt: `${s.de.nom} → ${s.a.nom}`, c: MONTREAL.couleur };
     }
     case "trip": return { txt: `${TRIPS[i].kicker} · ${TRIPS[i].titre}`, c: TRIPS[i].couleur };
     case "stop": return { txt: `${TRIPS[i].etapes[j].nom} · ${TRIPS[i].kicker}`, c: TRIPS[i].couleur };
-    default: return { txt: "Vue d’ensemble", c: "#8fa3b8" };
+    default: return { txt: "Vue d’ensemble", c: "#8e8e93" };
   }
 }
 

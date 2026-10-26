@@ -2,7 +2,7 @@
    d'OpenStreetMap). En cas d'échec : ligne droite. Les résultats sont
    gardés dans le navigateur pour ne pas refaire les requêtes. */
 
-import { densify } from "./geo.js";
+import { densify } from "./geo.js?v=5";
 
 const SERVEURS = {
   car:  "https://routing.openstreetmap.de/routed-car/route/v1/driving/",

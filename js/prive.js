@@ -3,9 +3,9 @@
    Firebase n'est chargé qu'au clic sur l'engrenage : aucun poids
    en plus pour le reste du site. */
 
-import { firebaseConfig, COMPTE, SUFFIXE, VERSION_SDK } from "./firebase-config.js";
-import { MONTREAL, TRIPS } from "./data.js";
-import { cleCarnet } from "./story.js";
+import { firebaseConfig, COMPTE, SUFFIXE, VERSION_SDK } from "./firebase-config.js?v=5";
+import { MONTREAL, TRIPS } from "./data.js?v=5";
+import { cleCarnet } from "./story.js?v=5";
 
 /* Dossiers « carnet/… » : photos affichées dans les sections du site (visibles par tous).
    Dossiers « prive/… » : visibles uniquement après le code. */
@@ -102,7 +102,7 @@ panneau.innerHTML = `
   <header class="prive-tete">
     <div>
       <div class="k">Espace privé</div>
-      <h2>Mes <em>photos</em></h2>
+      <h2>Mes photos.</h2>
     </div>
     <div class="prive-actions">
       <select class="prive-dossier" aria-label="Dossier">
@@ -545,7 +545,7 @@ async function remplirSection(galerie) {
   }
   // section sans aucune photo : on remet les emplacements vides
   if (!galerie.children.length) {
-    galerie.innerHTML = [1, 2, 3].map(() => `<div class="ph"><span>📷 Photo à ajouter</span></div>`).join("");
+    galerie.innerHTML = [1, 2, 3].map(() => `<div class="ph"><span>Photo à ajouter</span></div>`).join("");
   }
   galerie.className = galerie.className.replace(/\bn-\d\b/, `n-${Math.min(galerie.children.length, 5)}`);
 }

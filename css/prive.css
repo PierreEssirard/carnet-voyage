@@ -5,27 +5,27 @@
 /* ---------- Engrenage ---------- */
 .prive-gear {
   position: fixed;
-  top: 18px;
-  right: 18px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: 14px;
   z-index: 70;
-  width: 44px; height: 44px;
+  width: 36px; height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 1px solid var(--line-2);
-  background: rgba(10, 13, 18, .7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border: 0;
+  background: rgba(28, 28, 30, .7);
+  backdrop-filter: var(--material);
+  -webkit-backdrop-filter: var(--material);
   color: var(--mute);
   cursor: pointer;
   transition: color .3s, border-color .3s, box-shadow .3s;
 }
 .prive-gear svg { transition: transform .8s var(--ease); }
-.prive-gear:hover { color: var(--ink); border-color: var(--c-active); box-shadow: 0 0 24px -6px var(--c-active); }
+.prive-gear:hover { color: var(--ink); background: rgba(58, 58, 60, .85); }
 .prive-gear:hover svg { transform: rotate(120deg); }
-.prive-gear:focus-visible { outline: 2px solid var(--c-active); outline-offset: 3px; }
+.prive-gear:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
 .prive-gear.charge svg { animation: tourne 1s linear infinite; }
-.prive-gear.deverrouille { color: var(--c-active); }
+.prive-gear.deverrouille { color: var(--link); }
 
 /* ---------- Fenêtre du code ---------- */
 .prive-modal {
@@ -35,9 +35,9 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(4, 6, 9, .78);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, .6);
+  backdrop-filter: var(--material);
+  -webkit-backdrop-filter: var(--material);
   opacity: 0;
   visibility: hidden;
   transition: opacity .35s, visibility 0s .35s;
@@ -51,7 +51,7 @@
   border-radius: 26px;
   background: var(--panel-solid);
   border: 1px solid var(--line-2);
-  box-shadow: 0 40px 100px -30px #000, 0 0 80px -40px var(--c-active);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .8);
   transform: translateY(16px) scale(.97);
   transition: transform .45s var(--ease);
 }
@@ -65,8 +65,8 @@
   place-items: center;
   font-size: 24px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--c-active) 14%, transparent);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--c-active) 6%, transparent);
+  background: color-mix(in srgb, var(--link) 14%, transparent);
+  box-shadow: none;
 }
 
 .pin {
@@ -96,22 +96,22 @@
   width: 54px; height: 64px;
   display: grid;
   place-items: center;
-  font: 600 1.8rem Inter, system-ui, sans-serif;
+  font: 600 1.8rem var(--font-text);
   color: var(--ink);
   background: rgba(255, 255, 255, .03);
   border: 1px solid var(--line-2);
   border-radius: 14px;
   transition: border-color .2s, box-shadow .2s, background .2s, transform .2s var(--ease);
 }
-.pin-case.pleine { background: color-mix(in srgb, var(--c-active) 10%, transparent); transform: translateY(-2px); }
+.pin-case.pleine { background: color-mix(in srgb, var(--link) 10%, transparent); transform: translateY(-2px); }
 .pin-case.courante {
-  border-color: var(--c-active);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-active) 20%, transparent);
+  border-color: var(--link);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--link) 35%, transparent);
 }
 .pin-case.courante:empty::after {
   content: "";
   width: 2px; height: 26px;
-  background: var(--c-active);
+  background: var(--link);
   animation: clignote 1s steps(1) infinite;
 }
 .pin-saisie:disabled ~ .pin-case { opacity: .5; }
@@ -131,7 +131,7 @@
 .prive-lien:hover { color: var(--ink); }
 
 .prive-box.secoue { animation: secoue .45s; }
-.prive-box.ok .pin-case { border-color: #3fb950; box-shadow: 0 0 0 4px rgba(63, 185, 80, .2); }
+.prive-box.ok .pin-case { border-color: #30d158; box-shadow: 0 0 0 4px rgba(48, 209, 88, .25); }
 
 /* ---------- Panneau galerie ---------- */
 .prive-panel {
@@ -141,8 +141,7 @@
   overflow-y: auto;
   padding: clamp(18px, 4vw, 48px);
   background:
-    radial-gradient(70vw 50vh at 80% 0%, color-mix(in srgb, var(--c-active) 12%, transparent), transparent 70%),
-    #07090d;
+    #000;
   opacity: 0;
   visibility: hidden;
   transform: translateY(24px);
@@ -174,20 +173,20 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
   border: 1px solid var(--line-2);
   background: rgba(255, 255, 255, .04);
   color: var(--ink);
-  font: 500 .9rem Inter, system-ui, sans-serif;
+  font: 500 .9rem var(--font-text);
   cursor: pointer;
   transition: background .2s, border-color .2s;
 }
 .prive-btn:hover, .prive-dossier:hover { background: rgba(255, 255, 255, .09); }
 .prive-dossier { max-width: 260px; }
-.prive-dossier option { background: #11161e; }
+.prive-dossier option { background: #1c1c1e; }
 .prive-ajout {
-  background: var(--c-active);
+  background: var(--link);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 8px 24px -10px var(--c-active);
+  box-shadow: none;
 }
-.prive-ajout:hover { background: color-mix(in srgb, var(--c-active) 85%, #fff); }
+.prive-ajout:hover { background: color-mix(in srgb, var(--link) 85%, #fff); }
 .prive-fermer { width: 42px; justify-content: center; padding: 0; }
 
 /* Portée du dossier choisi */
@@ -201,7 +200,7 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
 }
 .prive-portee.publique { color: #9fd3a8; background: rgba(63, 185, 80, .08); border-color: rgba(63, 185, 80, .25); }
 .prive-portee.secrete { color: var(--mute); background: rgba(255, 255, 255, .03); }
-.prive-dossier optgroup { background: #11161e; color: var(--mute); font-style: normal; }
+.prive-dossier optgroup { background: #1c1c1e; color: var(--mute); font-style: normal; }
 
 /* Légendes des photos du carnet (sections publiques) */
 .galerie figure.depuis-firebase figcaption {
@@ -231,9 +230,9 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
 }
 .prive-envoi .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prive-envoi .barre { height: 4px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
-.prive-envoi .barre i { display: block; height: 100%; width: 0; background: var(--c-active); transition: width .2s; }
+.prive-envoi .barre i { display: block; height: 100%; width: 0; background: var(--link); transition: width .2s; }
 .prive-envoi .pct { text-align: right; color: var(--mute); }
-.prive-envoi.fini .barre i { background: #3fb950; }
+.prive-envoi.fini .barre i { background: #30d158; }
 .prive-envoi.echec .pct { color: #ff7b72; }
 
 .prive-vide {
@@ -267,7 +266,7 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
-  background: rgba(10, 13, 18, .78);
+  background: rgba(28, 28, 30, .78);
   border: 1px solid var(--line-2);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -312,12 +311,12 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
   height: 38px;
   padding: 0 12px;
   border-radius: 10px;
-  border: 1px solid var(--c-active);
-  background: rgba(10, 13, 18, .92);
+  border: 1px solid var(--link);
+  background: rgba(28, 28, 30, .92);
   color: var(--ink);
-  font: 16px Inter, system-ui, sans-serif;
+  font: 16px var(--font-text);
   outline: none;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-active) 20%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--link) 35%, transparent);
 }
 
 /* États */

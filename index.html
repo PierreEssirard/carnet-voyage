@@ -5,22 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Carnet de voyages — Pierre Essirard</title>
   <meta name="description" content="Montréal et mes road trips en Amérique du Nord, étape par étape.">
-  <meta name="theme-color" content="#07090d">
+  <meta name="theme-color" content="#000000">
   <meta name="color-scheme" content="dark">
 
-  <!-- Polices -->
+  <!-- Titres : Instrument Serif · Texte : police système (SF Pro sur Apple), Inter ailleurs -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <!-- MapLibre (carte vectorielle + bâtiments 3D, sans clé API) -->
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 
   <!-- Styles du site -->
-  <link href="css/style.css" rel="stylesheet">
-  <link href="css/prive.css" rel="stylesheet">
+  <link href="css/style.css?v=5" rel="stylesheet">
+  <link href="css/prive.css?v=5" rel="stylesheet">
 </head>
-<body>
+<body class="en-vol">
+  <!-- INTRO : la planète et le vol Paris → Montréal (js/intro.js) -->
+  <section id="intro" aria-label="Introduction : vol de Paris à Montréal">
+    <div class="intro-scene">
+      <canvas aria-hidden="true"></canvas>
+
+      <div class="intro-haut">
+        <span>Pierre Essirard</span>
+        <span class="intro-haut-c">Carnet n°&nbsp;01 — Amérique du Nord</span>
+        <span>Canada · États-Unis</span>
+      </div>
+
+      <h1 class="intro-titre" aria-label="Carnet de voyages">
+        <span class="im"><span>Carnet</span></span> <span class="im"><span><em>de</em></span></span> <span class="im"><span><em>voyages</em></span></span>
+      </h1>
+
+      <div class="intro-indice"><span>Défiler pour décoller</span><i></i></div>
+
+      <div class="intro-legendes" aria-hidden="true"></div>
+
+      <div class="intro-piste" aria-hidden="true">
+        <span>CDG</span><div><b></b><i></i></div><span>YUL</span>
+      </div>
+
+      <div class="intro-km" aria-hidden="true"><b>0</b><span>km</span></div>
+
+      <p class="intro-bienvenue" aria-hidden="true"><span class="im"><span>Bienvenue</span></span> <span class="im"><span><em>à Montréal.</em></span></span></p>
+    </div>
+  </section>
+
   <div id="progress" aria-hidden="true"></div>
 
   <div id="mapwrap">
@@ -46,7 +75,11 @@
   <main id="story"></main>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script type="module" src="js/main.js"></script>
-  <script type="module" src="js/prive.js"></script>
+  <!-- Globe de l'intro -->
+  <script src="assets/vendor/d3-array.min.js"></script>
+  <script src="assets/vendor/d3-geo.min.js"></script>
+  <script src="assets/vendor/topojson-client.min.js"></script>
+  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="js/prive.js?v=5"></script>
 </body>
 </html>
