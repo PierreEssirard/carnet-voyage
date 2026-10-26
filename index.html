@@ -17,7 +17,7 @@
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 
   <!-- Styles du site -->
-  <link href="css/style.css?v=13" rel="stylesheet">
+  <link href="css/style.css?v=15" rel="stylesheet">
   <link href="css/prive.css?v=5" rel="stylesheet">
 </head>
 <body class="en-vol">
@@ -74,12 +74,19 @@
 
   <main id="story"></main>
 
+  <!-- three.js pour les objets 3D en or -->
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <!-- Globe de l'intro -->
   <script src="assets/vendor/d3-array.min.js"></script>
   <script src="assets/vendor/d3-geo.min.js"></script>
   <script src="assets/vendor/topojson-client.min.js"></script>
-  <script type="module" src="js/main.js?v=13"></script>
+  <script type="module" src="js/main.js?v=15"></script>
   <script type="module" src="js/prive.js?v=5"></script>
 </body>
 </html>

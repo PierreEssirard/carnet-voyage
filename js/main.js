@@ -10,7 +10,7 @@ import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, cur
 import { ll } from "./geo.js?v=5";
 import { intro } from "./intro.js?v=8";
 import { odometre } from "./odometre.js?v=5";
-import { objets3D } from "./objets.js?v=1";
+import { objets3D } from "./objets.js?v=3";
 
 /* 1. Le récit et les effets (avant la carte : le texte s'affiche tout de suite) */
 renderStory(document.getElementById("story"), { MONTREAL, TRIPS, TRANSPORTS, BASE });
@@ -90,7 +90,13 @@ mobile.addEventListener("change", (e) => { if (!e.matches) ranger(null); });
 const majKm = odometre();
 suivreDefilement("[data-view]", (vue) => { majKm(vue); afficher(vue); });
 
-/* 2. La carte (démarre en 3D sur Montréal) */
+/* 2. La carte (démarre en 3D sur Montréal) — pas de carte sur téléphone */
+if (matchMedia("(max-width: 800px)").matches) {
+  document.getElementById("mapwrap")?.remove();
+  document.getElementById("map-poignee")?.remove();
+  document.body.classList.add("sans-carte");
+  await new Promise(() => {});          // on s'arrête là : le récit fonctionne sans la carte
+}
 map = await createMap("map", MONTREAL.camera);
 const carte = new Carte(map);
 

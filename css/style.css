@@ -1684,28 +1684,29 @@ body::after {
 
 
 /* =========================================================
-   OBJETS 3D EN BLOCS DORÉS
+   OBJETS 3D EN BLOCS DORÉS — plein écran, sur le côté, sans cadre
    ========================================================= */
-.objets-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 6; pointer-events: none; }
-.objet3d {
-  position: relative;
-  height: clamp(340px, 52vh, 520px);
-  margin: 34px 0 26px;
-  border-top: 1px solid var(--sep);
-  border-bottom: 1px solid var(--sep);
-  background: radial-gradient(60% 55% at 50% 55%, rgba(226, 196, 140, .07), transparent 70%);
-  font: 400 9.5px/1 var(--mono);
-  letter-spacing: .24em;
-  text-transform: uppercase;
-  color: var(--mute);
+.objets-canvas {
+  position: fixed; inset: 0; width: 100vw; height: 100vh;
+  z-index: 4; pointer-events: none;
+  transition: opacity 1.2s var(--ease);
 }
-.objet3d.indispo { display: none; }
-.objet3d > span { position: absolute; opacity: calc(var(--p, 0) * 1.4 - .2); transition: opacity .3s; }
-.o-hg { top: 14px; left: 0; color: var(--or); }
-.o-hd { top: 14px; right: 0; }
-.o-bg { bottom: 14px; left: 0; color: var(--ink); font-size: 10.5px; }
-.o-bd { bottom: 14px; right: 0; }
-.objet3d::before, .objet3d::after { content: ""; position: absolute; width: 9px; height: 9px; border: 0 solid var(--or-2); }
-.objet3d::before { top: -1px; left: 50%; border-left-width: 1px; height: 12px; width: 0; }
-.objet3d::after { bottom: -1px; left: 50%; border-left-width: 1px; height: 12px; width: 0; }
-@media (max-width: 800px) { .objet3d { height: 320px; } }
+.en-vol .objets-canvas { opacity: 0; }
+html.objet-fond .objets-canvas { opacity: .5; }
+.objet3d { display: block; height: 0; margin: 0; }
+
+/* Le texte reste lisible quand l'objet passe derrière */
+main .card { text-shadow: 0 1px 18px rgba(11, 9, 7, .85); }
+
+
+/* =========================================================
+   TÉLÉPHONE : pas de carte, le récit prend toute la place
+   ========================================================= */
+@media (max-width: 800px) {
+  :root, .carte-mini { --map-h: 0px !important; }
+  #mapwrap, .map-poignee, main::before { display: none !important; }
+  main { padding-bottom: calc(var(--safe-b, 0px) + 24vh); }
+  .hero { min-height: 100svh; }
+  .odo { bottom: calc(var(--safe-b, 0px) + 18px); }
+  html.objet-fond .objets-canvas { opacity: .42; }
+}
