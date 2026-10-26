@@ -1,5 +1,5 @@
 /* Espace privé : engrenage → code à 4 chiffres → galerie Firebase
-   (voir, ajouter, supprimer des photos et vidéos).
+   (voir, ajouter, légender, remplacer, supprimer photos et vidéos).
    Firebase n'est chargé qu'au clic sur l'engrenage : aucun poids
    en plus pour le reste du site. */
 
@@ -13,22 +13,44 @@ const DOSSIERS = [
 ];
 const configure = !String(firebaseConfig.apiKey || "").startsWith("COLLE");
 const estVideo = (nom) => /\.(mp4|mov|webm|m4v)$/i.test(nom);
+const estHeic = (f) => /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 
 /* ---------- Firebase (chargé à la demande) ---------- */
 let fb = null;
-async function firebase() {
-  if (fb) return fb;
-  const base = `https://www.gstatic.com/firebasejs/${VERSION_SDK}/`;
-  const [app, A, S] = await Promise.all([
-    import(base + "firebase-app.js"),
-    import(base + "firebase-auth.js"),
-    import(base + "firebase-storage.js"),
-  ]);
-  const a = app.initializeApp(firebaseConfig);
-  const auth = A.getAuth(a);
-  await new Promise((ok) => { const stop = A.onAuthStateChanged(auth, () => { stop(); ok(); }); });
-  fb = { auth, storage: S.getStorage(a), A, S };
-  return fb;
+let fbPromesse = null;
+function firebase() {
+  if (fb) return Promise.resolve(fb);
+  if (fbPromesse) return fbPromesse;
+  fbPromesse = (async () => {
+    const base = `https://www.gstatic.com/firebasejs/${VERSION_SDK}/`;
+    const [app, A, S] = await Promise.all([
+      import(base + "firebase-app.js"),
+      import(base + "firebase-auth.js"),
+      import(base + "firebase-storage.js"),
+    ]);
+    const a = app.initializeApp(firebaseConfig);
+    const auth = A.getAuth(a);
+    await new Promise((ok) => { const stop = A.onAuthStateChanged(auth, () => { stop(); ok(); }); });
+    fb = { auth, storage: S.getStorage(a), A, S };
+    return fb;
+  })();
+  fbPromesse.catch(() => { fbPromesse = null; });
+  return fbPromesse;
+}
+
+/** Message lisible + code technique (utile pour me dire ce qui bloque). */
+function explication(e) {
+  const code = e?.code || e?.message || String(e);
+  const textes = {
+    "storage/unauthorized": "Accès refusé : vérifie les règles de Storage et que tu es connecté.",
+    "storage/unauthenticated": "Session expirée : verrouille puis rouvre l’espace.",
+    "storage/bucket-not-found": "Espace de stockage introuvable : as-tu activé Storage dans Firebase ?",
+    "storage/project-not-found": "Projet Firebase introuvable : vérifie firebase-config.js.",
+    "storage/quota-exceeded": "Quota dépassé : l’espace de stockage est plein (ou le forfait Blaze n’est pas actif).",
+    "storage/retry-limit-exceeded": "Connexion trop lente ou coupée. Réessaie.",
+    "storage/canceled": "Envoi annulé.",
+  };
+  return `${textes[code] || "Une erreur est survenue."} (${code})`;
 }
 
 /* ---------- Interface ---------- */
@@ -42,17 +64,22 @@ engrenage.setAttribute("aria-label", "Espace privé");
 engrenage.innerHTML = ICONE_ENGRENAGE;
 document.body.appendChild(engrenage);
 
-/* Fenêtre du code */
+/* Fenêtre du code : un seul vrai champ (invisible) posé sur 4 cases
+   décoratives. Toucher les cases = toucher le champ → le clavier s'ouvre. */
 const modal = document.createElement("div");
 modal.className = "prive-modal";
 modal.setAttribute("role", "dialog");
 modal.setAttribute("aria-modal", "true");
 modal.innerHTML = `
-  <form class="prive-box" autocomplete="off">
+  <form class="prive-box" autocomplete="off" novalidate>
     <div class="prive-cadenas">🔒</div>
     <h3>Espace privé</h3>
     <p class="prive-sous">Entre le code à 4 chiffres</p>
-    <div class="pin">${[0, 1, 2, 3].map((k) => `<input inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Chiffre ${k + 1}">`).join("")}</div>
+    <label class="pin">
+      <input class="pin-saisie" type="text" inputmode="numeric" pattern="[0-9]*"
+             autocomplete="one-time-code" maxlength="4" enterkeyhint="go" aria-label="Code à 4 chiffres">
+      <span class="pin-case"></span><span class="pin-case"></span><span class="pin-case"></span><span class="pin-case"></span>
+    </label>
     <p class="prive-msg" aria-live="polite"></p>
     <button type="button" class="prive-lien prive-annuler">Annuler</button>
   </form>`;
@@ -73,7 +100,7 @@ panneau.innerHTML = `
         ${DOSSIERS.map((d) => `<option value="${d.id}">${d.nom}</option>`).join("")}
       </select>
       <label class="prive-btn prive-ajout">
-        <input type="file" accept="image/*,video/*" multiple hidden>
+        <input type="file" accept="image/*,video/*,.heic,.heif" multiple hidden>
         ＋ Ajouter
       </label>
       <button type="button" class="prive-btn prive-sortie" title="Se déconnecter">Verrouiller</button>
@@ -82,26 +109,36 @@ panneau.innerHTML = `
   </header>
   <div class="prive-envois"></div>
   <div class="prive-vide">Aucune photo dans ce dossier pour l’instant.</div>
-  <div class="galerie prive-grille"></div>`;
+  <div class="galerie prive-grille"></div>
+  <input type="file" class="prive-remplacer" accept="image/*,video/*,.heic,.heif" hidden>`;
 document.body.appendChild(panneau);
 
 const $ = (s, r = document) => r.querySelector(s);
-const cases = [...modal.querySelectorAll(".pin input")];
+const saisie = $(".pin-saisie", modal);
+const casesPin = [...modal.querySelectorAll(".pin-case")];
 const msg = $(".prive-msg", modal);
+const boite = $(".prive-box", modal);
 const selDossier = $(".prive-dossier", panneau);
 const grille = $(".prive-grille", panneau);
 const vide = $(".prive-vide", panneau);
 const envois = $(".prive-envois", panneau);
+const champRemplacer = $(".prive-remplacer", panneau);
 
 /* ---------- Ouvrir / fermer ---------- */
 function ouvrirModal() {
   modal.classList.add("ouvert");
-  cases.forEach((c) => { c.value = ""; c.disabled = !configure; });
-  msg.textContent = configure ? "" : "Firebase n’est pas encore configuré (voir js/firebase-config.js).";
+  saisie.value = "";
+  saisie.disabled = !configure;
+  dessinerPin();
   msg.className = "prive-msg" + (configure ? "" : " info");
-  if (configure) setTimeout(() => cases[0].focus(), 50);
+  msg.textContent = configure ? "" : "Firebase n’est pas encore configuré (voir js/firebase-config.js).";
+  // focus immédiat (dans le geste du doigt) : indispensable pour que le clavier s'ouvre sur iPhone
+  if (configure) saisie.focus({ preventScroll: true });
 }
-const fermerModal = () => modal.classList.remove("ouvert");
+function fermerModal() {
+  modal.classList.remove("ouvert");
+  saisie.blur();
+}
 
 function ouvrirPanneau() {
   panneau.classList.add("ouvert");
@@ -114,19 +151,20 @@ function fermerPanneau() {
   document.body.classList.remove("prive-actif");
 }
 
-engrenage.addEventListener("click", async () => {
-  if (!configure) return ouvrirModal();
-  engrenage.classList.add("charge");
-  try {
-    const { auth } = await firebase();
-    auth.currentUser ? ouvrirPanneau() : ouvrirModal();
-  } catch (e) {
+engrenage.addEventListener("click", () => {
+  if (fb?.auth.currentUser) return ouvrirPanneau();
+  ouvrirModal(); // tout de suite, sans attendre Firebase
+  if (!configure) return;
+  firebase().then(({ auth }) => {
+    if (auth.currentUser && modal.classList.contains("ouvert")) { // déjà connecté
+      fermerModal();
+      ouvrirPanneau();
+    }
+  }).catch((e) => {
     console.error(e);
-    ouvrirModal();
+    msg.className = "prive-msg erreur";
     msg.textContent = "Impossible de joindre Firebase. Vérifie ta connexion.";
-  } finally {
-    engrenage.classList.remove("charge");
-  }
+  });
 });
 $(".prive-annuler", modal).addEventListener("click", fermerModal);
 modal.addEventListener("click", (e) => { if (e.target === modal) fermerModal(); });
@@ -143,50 +181,56 @@ addEventListener("keydown", (e) => {
 }, true); // « true » : passe avant la visionneuse, pour ne fermer qu'elle si elle est ouverte
 
 /* ---------- Saisie du code ---------- */
-cases.forEach((c, k) => {
-  c.addEventListener("input", () => {
-    c.value = c.value.replace(/\D/g, "").slice(-1);
-    if (c.value && k < 3) cases[k + 1].focus();
-    if (cases.every((x) => x.value)) verifier();
+function dessinerPin() {
+  const v = saisie.value;
+  const actif = document.activeElement === saisie;
+  casesPin.forEach((c, k) => {
+    c.textContent = v[k] ? "•" : "";
+    c.classList.toggle("pleine", !!v[k]);
+    c.classList.toggle("courante", actif && k === Math.min(v.length, 3));
   });
-  c.addEventListener("keydown", (e) => {
-    if (e.key === "Backspace" && !c.value && k > 0) cases[k - 1].focus();
-  });
-  c.addEventListener("paste", (e) => {
-    const chiffres = (e.clipboardData.getData("text").match(/\d/g) || []).slice(0, 4);
-    if (chiffres.length < 4) return;
-    e.preventDefault();
-    chiffres.forEach((d, n) => { cases[n].value = d; });
-    verifier();
-  });
+}
+saisie.addEventListener("input", () => {
+  saisie.value = saisie.value.replace(/\D/g, "").slice(0, 4);
+  dessinerPin();
+  if (saisie.value.length === 4) verifier(saisie.value);
+});
+saisie.addEventListener("focus", dessinerPin);
+saisie.addEventListener("blur", dessinerPin);
+boite.addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (saisie.value.length === 4) verifier(saisie.value);
 });
 
-async function verifier() {
-  const code = cases.map((c) => c.value).join("");
-  cases.forEach((c) => { c.disabled = true; });
+async function verifier(code) {
+  saisie.disabled = true;
   msg.className = "prive-msg";
   msg.textContent = "Vérification…";
   try {
     const { auth, A } = await firebase();
     await A.signInWithEmailAndPassword(auth, COMPTE, code + SUFFIXE);
     msg.textContent = "";
-    modal.querySelector(".prive-box").classList.add("ok");
+    boite.classList.add("ok");
+    saisie.blur();
     setTimeout(() => {
       fermerModal();
-      modal.querySelector(".prive-box").classList.remove("ok");
+      boite.classList.remove("ok");
       ouvrirPanneau();
     }, 500);
   } catch (e) {
-    const box = modal.querySelector(".prive-box");
-    box.classList.remove("secoue");
-    void box.offsetWidth; // relance l'animation
-    box.classList.add("secoue");
+    boite.classList.remove("secoue");
+    void boite.offsetWidth; // relance l'animation
+    boite.classList.add("secoue");
     msg.className = "prive-msg erreur";
     msg.textContent = e.code === "auth/too-many-requests"
       ? "Trop d’essais. Réessaie dans quelques minutes."
-      : e.code === "auth/network-request-failed" ? "Pas de connexion." : "Code incorrect.";
-    cases.forEach((c) => { c.disabled = false; c.value = ""; });
-    cases[0].focus();
+      : e.code === "auth/network-request-failed" ? "Pas de connexion."
+      : ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-login-credentials"].includes(e.code)
+        ? "Code incorrect." : `Connexion impossible (${e.code || e.message}).`;
+    saisie.disabled = false;
+    saisie.value = "";
+    dessinerPin();
+    saisie.focus();
   }
 }
 
@@ -194,52 +238,147 @@ async function verifier() {
 selDossier.addEventListener("change", chargerGalerie);
 
 async function chargerGalerie() {
-  const { storage, S } = await firebase();
   const dossier = selDossier.value;
   grille.innerHTML = "";
+  vide.className = "prive-vide";
   vide.textContent = "Chargement…";
   vide.hidden = false;
   try {
+    const { storage, S } = await firebase();
     const res = await S.listAll(S.ref(storage, `prive/${dossier}`));
-    if (selDossier.value !== dossier) return; // l'utilisateur a changé de dossier entre-temps
+    if (selDossier.value !== dossier) return; // dossier changé entre-temps
     const items = res.items.sort((a, b) => b.name.localeCompare(a.name)); // plus récentes d'abord
-    const urls = await Promise.all(items.map((it) => S.getDownloadURL(it)));
-    items.forEach((it, k) => grille.appendChild(vignette(it, urls[k])));
+    const infos = await Promise.all(items.map(async (it) => {
+      const [url, meta] = await Promise.all([S.getDownloadURL(it), S.getMetadata(it).catch(() => ({}))]);
+      return { item: it, url, legende: meta.customMetadata?.legende || "" };
+    }));
+    infos.forEach((info) => grille.appendChild(vignette(info)));
     vide.textContent = "Aucune photo dans ce dossier pour l’instant.";
-    vide.hidden = items.length > 0;
+    vide.hidden = infos.length > 0;
   } catch (e) {
     console.error(e);
-    vide.textContent = e.code === "storage/unauthorized"
-      ? "Accès refusé : vérifie les règles de Storage (voir le guide)."
-      : "Impossible de charger les photos.";
+    vide.className = "prive-vide erreur";
+    vide.textContent = explication(e);
   }
 }
 
-function vignette(item, url) {
+const nomLisible = (nom) => nom.replace(/^\d+-/, "").replace(/\.\w+$/, "");
+
+function vignette(info) {
+  const { item, url } = info;
   const fig = document.createElement("figure");
   fig.innerHTML = estVideo(item.name)
     ? `<video src="${url}" controls playsinline preload="metadata"></video>`
-    : `<img src="${url}" alt="${item.name.replace(/^\d+-/, "")}" loading="lazy" decoding="async">`;
-  const suppr = document.createElement("button");
-  suppr.className = "prive-suppr";
-  suppr.type = "button";
-  suppr.title = "Supprimer";
-  suppr.textContent = "🗑";
-  suppr.addEventListener("click", async (e) => {
+    : `<img src="${url}" loading="lazy" decoding="async">`;
+  const media = fig.firstElementChild;
+  if (media.tagName === "IMG") {
+    media.alt = info.legende || nomLisible(item.name);
+    media.addEventListener("error", () => {
+      fig.classList.add("illisible");
+      fig.insertAdjacentHTML("afterbegin", `<div class="prive-illisible">Aperçu impossible<br><small>format non lu par ce navigateur</small></div>`);
+    }, { once: true });
+  }
+
+  const legende = document.createElement("figcaption");
+  legende.textContent = info.legende;
+  legende.hidden = !info.legende;
+  fig.appendChild(legende);
+
+  const barre = document.createElement("div");
+  barre.className = "prive-outils";
+  barre.innerHTML = `
+    <button type="button" data-a="legende" title="Légende" aria-label="Modifier la légende">✎</button>
+    <button type="button" data-a="remplacer" title="Remplacer" aria-label="Remplacer">⇄</button>
+    <button type="button" data-a="supprimer" title="Supprimer" aria-label="Supprimer">🗑</button>`;
+  fig.appendChild(barre);
+
+  barre.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
     e.stopPropagation();
-    if (!confirm("Supprimer définitivement ce fichier ?")) return;
-    try {
-      await fb.S.deleteObject(item);
-      fig.classList.add("part");
-      setTimeout(() => { fig.remove(); vide.hidden = grille.children.length > 0; }, 350);
-    } catch (err) {
-      alert("Suppression impossible.");
-      console.error(err);
-    }
+    if (b.dataset.a === "supprimer") supprimer(info, fig);
+    if (b.dataset.a === "remplacer") demanderRemplacement(info, fig);
+    if (b.dataset.a === "legende") editerLegende(info, fig, legende);
   });
-  fig.appendChild(suppr);
   return fig;
 }
+
+async function supprimer(info, fig) {
+  if (!confirm("Supprimer définitivement ce fichier ?")) return;
+  try {
+    await fb.S.deleteObject(info.item);
+    fig.classList.add("part");
+    setTimeout(() => { fig.remove(); vide.hidden = grille.children.length > 0; }, 350);
+  } catch (err) {
+    console.error(err);
+    alert("Suppression impossible. " + explication(err));
+  }
+}
+
+/* Légende : petit champ directement sur la photo */
+function editerLegende(info, fig, legende) {
+  if (fig.querySelector(".prive-legende-saisie")) return;
+  const champ = document.createElement("input");
+  champ.className = "prive-legende-saisie";
+  champ.type = "text";
+  champ.maxLength = 140;
+  champ.placeholder = "Écris une légende…";
+  champ.enterKeyHint = "done";
+  champ.value = info.legende;
+  legende.hidden = true;
+  fig.appendChild(champ);
+  champ.focus();
+
+  let fini = false;
+  const valider = async (garder) => {
+    if (fini) return;
+    fini = true;
+    const texte = champ.value.trim();
+    champ.remove();
+    if (!garder || texte === info.legende) { legende.hidden = !info.legende; return; }
+    try {
+      await fb.S.updateMetadata(info.item, { customMetadata: { legende: texte } });
+      info.legende = texte;
+      legende.textContent = texte;
+      const img = fig.querySelector("img");
+      if (img) img.alt = texte || nomLisible(info.item.name);
+    } catch (err) {
+      console.error(err);
+      alert("Légende non enregistrée. " + explication(err));
+    }
+    legende.hidden = !info.legende;
+  };
+  champ.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); valider(true); }
+    if (e.key === "Escape") { e.stopPropagation(); valider(false); }
+  });
+  champ.addEventListener("blur", () => valider(true));
+}
+
+/* Remplacer : nouvelle photo à la même place (même ordre, même légende) */
+let aRemplacer = null;
+function demanderRemplacement(info, fig) {
+  aRemplacer = { info, fig };
+  champRemplacer.click();
+}
+champRemplacer.addEventListener("change", async () => {
+  const f = champRemplacer.files[0];
+  champRemplacer.value = "";
+  if (!f || !aRemplacer) return;
+  const { info, fig } = aRemplacer;
+  aRemplacer = null;
+  fig.classList.add("occupe");
+  const horodatage = (info.item.name.match(/^\d+/) || [Date.now()])[0];
+  const ok = await envoyer(f, {
+    dossier: info.item.parent.fullPath,
+    horodatage,
+    legende: info.legende,
+  });
+  if (ok && ok.fullPath !== info.item.fullPath) {
+    await fb.S.deleteObject(info.item).catch((e) => console.error(e));
+  }
+  chargerGalerie();
+});
 
 /* ---------- Envoi de fichiers ---------- */
 $(".prive-ajout input", panneau).addEventListener("change", async (e) => {
@@ -252,52 +391,95 @@ $(".prive-ajout input", panneau).addEventListener("change", async (e) => {
 const propre = (nom) => nom.normalize("NFD").replace(/[̀-ͯ]/g, "")
   .replace(/[^\w.-]+/g, "-").replace(/-+/g, "-").toLowerCase();
 
-/** Réduit les grosses photos (max 2560 px) pour économiser l'espace gratuit. */
+/* Les photos d'iPhone (HEIC) ne s'affichent pas dans Chrome :
+   on les convertit en JPEG avant l'envoi. */
+let heicPret = null;
+function chargerHeic() {
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  heicPret ??= new Promise((ok, ko) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
+    s.onload = () => ok(window.heic2any);
+    s.onerror = ko;
+    document.head.appendChild(s);
+  });
+  return heicPret;
+}
+
+/** Convertit / réduit les photos (max 2560 px) pour qu'elles s'affichent partout et prennent peu de place. */
 async function preparer(f) {
-  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return { blob: f, nom: f.name };
+  let source = f;
+  let nom = f.name;
+  if (estHeic(f)) {
+    try {
+      const heic2any = await chargerHeic();
+      const res = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.86 });
+      source = Array.isArray(res) ? res[0] : res;
+      nom = nom.replace(/\.\w+$/, "") + ".jpg";
+    } catch (e) {
+      console.warn("Conversion HEIC impossible", e);
+      return { blob: f, nom };
+    }
+  }
+  if (!/^image\/(jpeg|png|webp)$/.test(source.type)) return { blob: source, nom };
   try {
-    const img = await createImageBitmap(f);
+    const img = await createImageBitmap(source);
     const k = Math.min(1, 2560 / Math.max(img.width, img.height));
-    if (k === 1 && f.size < 1.5e6) return { blob: f, nom: f.name };
+    if (k === 1 && source.size < 1.5e6) return { blob: source, nom };
     const c = document.createElement("canvas");
     c.width = Math.round(img.width * k);
     c.height = Math.round(img.height * k);
     c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
     const blob = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.86));
-    return blob ? { blob, nom: f.name.replace(/\.\w+$/, "") + ".jpg" } : { blob: f, nom: f.name };
+    return blob ? { blob, nom: nom.replace(/\.\w+$/, "") + ".jpg" } : { blob: source, nom };
   } catch {
-    return { blob: f, nom: f.name };
+    return { blob: source, nom };
   }
 }
 
-async function envoyer(f) {
-  const { storage, S } = await firebase();
+/**
+ * Envoie un fichier. Renvoie la référence créée, ou null en cas d'échec.
+ * options : dossier (chemin complet), horodatage, legende
+ */
+async function envoyer(f, options = {}) {
   const ligne = document.createElement("div");
   ligne.className = "prive-envoi";
-  ligne.innerHTML = `<span class="nom"></span><span class="barre"><i></i></span><span class="pct">0 %</span>`;
+  ligne.innerHTML = `<span class="nom"></span><span class="barre"><i></i></span><span class="pct">…</span>`;
   ligne.querySelector(".nom").textContent = f.name;
   envois.appendChild(ligne);
+  const echec = (err) => {
+    console.error(err);
+    ligne.classList.add("echec");
+    ligne.querySelector(".pct").textContent = "Échec";
+    ligne.querySelector(".nom").textContent = `${f.name} — ${explication(err)}`;
+  };
 
-  const { blob, nom } = await preparer(f);
-  const chemin = `prive/${selDossier.value}/${Date.now()}-${propre(nom)}`;
-  await new Promise((ok) => {
-    const tache = S.uploadBytesResumable(S.ref(storage, chemin), blob, { contentType: blob.type || f.type });
-    tache.on("state_changed",
-      (s) => {
-        const p = Math.round((s.bytesTransferred / s.totalBytes) * 100);
-        ligne.querySelector("i").style.width = p + "%";
-        ligne.querySelector(".pct").textContent = p + " %";
-      },
-      (err) => {
-        console.error(err);
-        ligne.classList.add("echec");
-        ligne.querySelector(".pct").textContent = "Échec";
-        ok();
-      },
-      () => {
-        ligne.classList.add("fini");
-        setTimeout(() => ligne.remove(), 1500);
-        ok();
-      });
-  });
+  try {
+    const { storage, S } = await firebase();
+    const { blob, nom } = await preparer(f);
+    const dossier = options.dossier || `prive/${selDossier.value}`;
+    const chemin = `${dossier}/${options.horodatage || Date.now()}-${propre(nom)}`;
+    const meta = { contentType: blob.type || f.type || undefined };
+    if (options.legende) meta.customMetadata = { legende: options.legende };
+    const cible = S.ref(storage, chemin);
+
+    return await new Promise((ok) => {
+      const tache = S.uploadBytesResumable(cible, blob, meta);
+      tache.on("state_changed",
+        (s) => {
+          const p = Math.round((s.bytesTransferred / s.totalBytes) * 100);
+          ligne.querySelector("i").style.width = p + "%";
+          ligne.querySelector(".pct").textContent = p + " %";
+        },
+        (err) => { echec(err); ok(null); },
+        () => {
+          ligne.classList.add("fini");
+          setTimeout(() => ligne.remove(), 1500);
+          ok(cible);
+        });
+    });
+  } catch (err) {
+    echec(err);
+    return null;
+  }
 }

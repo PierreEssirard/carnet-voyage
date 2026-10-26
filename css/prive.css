@@ -40,9 +40,9 @@
   -webkit-backdrop-filter: blur(10px);
   opacity: 0;
   visibility: hidden;
-  transition: opacity .35s, visibility .35s;
+  transition: opacity .35s, visibility 0s .35s;
 }
-.prive-modal.ouvert { opacity: 1; visibility: visible; }
+.prive-modal.ouvert { opacity: 1; visibility: visible; transition: opacity .35s, visibility 0s; }
 
 .prive-box {
   width: min(360px, 100%);
@@ -69,24 +69,52 @@
   box-shadow: 0 0 0 8px color-mix(in srgb, var(--c-active) 6%, transparent);
 }
 
-.pin { display: flex; justify-content: center; gap: 12px; }
-.pin input {
+.pin {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  cursor: text;
+}
+/* Le vrai champ, invisible, couvre les 4 cases : un toucher n'importe où ouvre le clavier */
+.pin-saisie {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  font-size: 16px; /* évite le zoom automatique sur iPhone */
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+.pin-case {
   width: 54px; height: 64px;
-  text-align: center;
-  font: 600 1.6rem Inter, system-ui, sans-serif;
+  display: grid;
+  place-items: center;
+  font: 600 1.8rem Inter, system-ui, sans-serif;
   color: var(--ink);
-  caret-color: var(--c-active);
   background: rgba(255, 255, 255, .03);
   border: 1px solid var(--line-2);
   border-radius: 14px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s, background .2s;
+  transition: border-color .2s, box-shadow .2s, background .2s, transform .2s var(--ease);
 }
-.pin input:focus {
+.pin-case.pleine { background: color-mix(in srgb, var(--c-active) 10%, transparent); transform: translateY(-2px); }
+.pin-case.courante {
   border-color: var(--c-active);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-active) 20%, transparent);
 }
-.pin input:disabled { opacity: .5; }
+.pin-case.courante:empty::after {
+  content: "";
+  width: 2px; height: 26px;
+  background: var(--c-active);
+  animation: clignote 1s steps(1) infinite;
+}
+.pin-saisie:disabled ~ .pin-case { opacity: .5; }
 
 .prive-msg { min-height: 1.4em; margin: 16px 0 4px; font-size: .88rem; color: var(--mute); }
 .prive-msg.erreur { color: #ff7b72; }
@@ -103,7 +131,7 @@
 .prive-lien:hover { color: var(--ink); }
 
 .prive-box.secoue { animation: secoue .45s; }
-.prive-box.ok .pin input { border-color: #3fb950; box-shadow: 0 0 0 4px rgba(63, 185, 80, .2); }
+.prive-box.ok .pin-case { border-color: #3fb950; box-shadow: 0 0 0 4px rgba(63, 185, 80, .2); }
 
 /* ---------- Panneau galerie ---------- */
 .prive-panel {
@@ -203,26 +231,91 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
 .prive-grille video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
 .prive-grille figure.part { opacity: 0; transform: scale(.9); }
 
-.prive-suppr {
+/* Barre d'outils de chaque photo */
+.prive-outils {
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 2;
-  width: 34px; height: 34px;
-  border-radius: 50%;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(10, 13, 18, .78);
   border: 1px solid var(--line-2);
-  background: rgba(10, 13, 18, .8);
-  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   opacity: 0;
-  transition: opacity .25s, background .2s;
+  transform: translateY(-4px);
+  transition: opacity .25s, transform .25s var(--ease);
 }
-.prive-grille figure:hover .prive-suppr,
-.prive-suppr:focus-visible { opacity: 1; }
-.prive-suppr:hover { background: #b62324; }
-@media (hover: none) { .prive-suppr { opacity: .85; } }
+.prive-outils button {
+  width: 32px; height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.prive-outils button:hover { background: rgba(255, 255, 255, .12); }
+.prive-outils button[data-a="supprimer"]:hover { background: #b62324; }
+.prive-grille figure:hover .prive-outils,
+.prive-outils:focus-within { opacity: 1; transform: none; }
+@media (hover: none) { .prive-outils { opacity: 1; transform: none; } }
+
+/* Légende */
+.prive-grille figcaption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  padding: 22px 10px 8px;
+  font-size: .78rem;
+  line-height: 1.3;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .75));
+  pointer-events: none;
+}
+.prive-legende-saisie {
+  position: absolute;
+  left: 8px; right: 8px; bottom: 8px;
+  z-index: 4;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--c-active);
+  background: rgba(10, 13, 18, .92);
+  color: var(--ink);
+  font: 16px Inter, system-ui, sans-serif;
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-active) 20%, transparent);
+}
+
+/* États */
+.prive-grille figure.occupe { opacity: .4; pointer-events: none; }
+.prive-illisible {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 10px;
+  font-size: .8rem;
+  color: var(--mute);
+  background: linear-gradient(160deg, #141a23, #0c1017);
+}
+.prive-illisible small { font-size: .7rem; }
+.prive-vide.erreur { color: #ff7b72; }
+.prive-envoi.echec { grid-template-columns: minmax(0, 1fr) 54px; }
+.prive-envoi.echec .barre { display: none; }
+.prive-envoi.echec .nom { white-space: normal; color: #ffb3ad; }
 
 /* ---------- Animations ---------- */
 @keyframes tourne { to { transform: rotate(360deg); } }
+@keyframes clignote { 50% { opacity: 0; } }
 @keyframes secoue {
   20%, 60% { transform: translateX(-9px); }
   40%, 80% { transform: translateX(9px); }
@@ -231,10 +324,11 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
 /* ---------- Mobile ---------- */
 @media (max-width: 800px) {
   .prive-gear { top: auto; bottom: 18px; right: 16px; }
-  .pin input { width: 50px; height: 58px; }
+  .pin-case { width: 52px; height: 60px; }
   .prive-tete { align-items: flex-start; }
   .prive-actions { width: 100%; }
-  .prive-dossier { flex: 1; max-width: none; }
+  .prive-dossier { flex: 1 1 100%; width: 100%; min-width: 0; max-width: none; }
   .prive-envoi { grid-template-columns: minmax(0, 1fr) 80px 46px; }
-  .galerie.prive-grille { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .galerie.prive-grille { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .prive-panel { padding-bottom: 80px; }
 }

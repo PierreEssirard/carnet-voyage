@@ -27,6 +27,7 @@ const NUIT = {
 };
 
 export const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const estMobile = matchMedia("(max-width: 800px)").matches;
 
 /** Crée la carte et attend qu'elle soit prête. */
 export function createMap(containerId, camera) {
@@ -41,6 +42,13 @@ export function createMap(containerId, camera) {
     pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5), // allège les écrans Retina
     fadeDuration: 150,
     attributionControl: { compact: true },
+    // Sur téléphone : un doigt fait défiler la page, deux doigts bougent la carte
+    cooperativeGestures: estMobile,
+    locale: {
+      "CooperativeGesturesHandler.MobileHelpText": "Utilise deux doigts pour déplacer la carte",
+      "CooperativeGesturesHandler.WindowsHelpText": "Ctrl + molette pour zoomer",
+      "CooperativeGesturesHandler.MacHelpText": "⌘ + molette pour zoomer",
+    },
   });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), "top-left");
   map.scrollZoom.disable(); // la molette sert à faire défiler le récit

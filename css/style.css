@@ -648,26 +648,47 @@ video { width: 100%; display: block; background: #000; }
    MOBILE : carte en bandeau en haut
    ========================================================= */
 @media (max-width: 800px) {
-  :root { --gap: 0px; }
+  /* svh = hauteur stable : la carte ne saute plus quand la barre d'adresse apparaît/disparaît */
+  :root { --gap: 0px; --map-h: 36vh; }
+  .carte-mini { --map-h: 20vh; }
+  @supports (height: 1svh) {
+    :root { --map-h: 36svh; }
+    .carte-mini { --map-h: 20svh; }
+  }
+
   #mapwrap {
     top: 0; left: 0; right: 0; bottom: auto;
     width: auto;
     height: var(--map-h);
-    border-radius: 0 0 22px 22px;
+    border-radius: 0 0 20px 20px;
     border-top: 0;
+    opacity: 1;
+    animation: none;
+    transition: height .5s var(--ease);
   }
-  .carte-mini { --map-h: 18vh; }
   .carte-mini #mapwrap { top: 0; width: auto; border-radius: 0 0 18px 18px; }
   .carte-mini .maptag { left: auto; right: 10px; max-width: calc(100% - 70px); }
-  #mapwrap { transition: height .5s var(--ease), border-radius .5s var(--ease); }
+  .maplibregl-ctrl-top-left { display: none; } /* plus de place, on zoome à deux doigts */
+
+  /* Bandeau opaque derrière la carte : le texte disparaît dessous au lieu de se voir autour */
+  main::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(var(--map-h) + 28px);
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--bg) calc(100% - 28px), transparent);
+    transition: height .5s var(--ease);
+  }
 
   main {
     margin-left: 0;
-    padding: calc(var(--map-h) + 16px) 14px 30vh;
+    padding: calc(var(--map-h) + 20px) 14px 30vh;
     transition: padding-top .5s var(--ease);
   }
-  html { scroll-padding-top: calc(var(--map-h) + 12px); }
-  .hero { min-height: calc(100vh - var(--map-h)); padding-block: 4vh; margin-bottom: 8vh; }
+  html { scroll-padding-top: calc(var(--map-h) + 16px); }
+  .hero { min-height: calc(100svh - var(--map-h)); padding-block: 4vh; margin-bottom: 8vh; }
   .card { margin-bottom: 16vh; border-radius: 20px; }
   .galerie { gap: 6px; }
   .galerie > * { border-radius: 12px; }
