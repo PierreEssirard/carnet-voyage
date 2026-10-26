@@ -410,21 +410,25 @@ p { margin: .55em 0; color: #c9d1da; }
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px 8px;
+  max-width: 100%;
   font-size: .86rem;
+  line-height: 1.35;
   padding: 6px 14px 6px 8px;
-  border-radius: 999px;
+  border-radius: 19px;
   border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
   background: color-mix(in srgb, var(--c) 10%, transparent);
   margin: 4px 0 10px;
 }
 .transport span {
   display: grid; place-items: center;
+  flex: none;
   width: 26px; height: 26px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--c) 30%, transparent);
 }
-.transport i { width: 3px; height: 3px; border-radius: 50%; background: var(--mute); }
+.transport i { width: 3px; height: 3px; border-radius: 50%; background: var(--mute); flex: none; }
+.transport em { font-style: normal; min-width: 0; overflow-wrap: anywhere; }
 
 /* =========================================================
    GALERIE PHOTO
@@ -582,9 +586,13 @@ video { width: 100%; display: block; background: #000; }
   align-items: center;
   gap: 7px;
   pointer-events: none;
-  transition: opacity .5s;
+  visibility: visible;
 }
-.pin[data-state="hidden"] { opacity: 0; }
+/* MapLibre impose opacity:1 en ligne sur le repère : on masque avec visibility
+   (retardée pour laisser le fondu des enfants se faire) */
+.pin > * { transition: opacity .5s, transform .4s var(--ease); }
+.pin[data-state="hidden"] { visibility: hidden; transition: visibility 0s .5s; }
+.pin[data-state="hidden"] > * { opacity: 0; }
 .pin-dot {
   position: relative;
   width: 12px; height: 12px;
@@ -645,51 +653,52 @@ video { width: 100%; display: block; background: #000; }
 }
 
 /* =========================================================
-   MOBILE : carte en bandeau en haut
+   MOBILE : carte en bas de l'écran
    ========================================================= */
 @media (max-width: 800px) {
   /* svh = hauteur stable : la carte ne saute plus quand la barre d'adresse apparaît/disparaît */
-  :root { --gap: 0px; --map-h: 36vh; }
-  .carte-mini { --map-h: 20vh; }
+  :root { --gap: 10px; --map-h: 30vh; --safe-b: env(safe-area-inset-bottom, 0px); }
+  .carte-mini { --map-h: 17vh; }
   @supports (height: 1svh) {
-    :root { --map-h: 36svh; }
-    .carte-mini { --map-h: 20svh; }
+    :root { --map-h: 30svh; }
+    .carte-mini { --map-h: 17svh; }
   }
 
   #mapwrap {
-    top: 0; left: 0; right: 0; bottom: auto;
+    top: auto; left: var(--gap); right: var(--gap);
+    bottom: calc(var(--gap) + var(--safe-b));
     width: auto;
     height: var(--map-h);
-    border-radius: 0 0 20px 20px;
-    border-top: 0;
+    border-radius: 18px;
     opacity: 1;
     animation: none;
     transition: height .5s var(--ease);
   }
-  .carte-mini #mapwrap { top: 0; width: auto; border-radius: 0 0 18px 18px; }
+  .carte-mini #mapwrap { top: auto; width: auto; border-radius: 16px; }
   .carte-mini .maptag { left: auto; right: 10px; max-width: calc(100% - 70px); }
   .maplibregl-ctrl-top-left { display: none; } /* plus de place, on zoome à deux doigts */
 
-  /* Bandeau opaque derrière la carte : le texte disparaît dessous au lieu de se voir autour */
+  /* Socle opaque sous la carte : le texte disparaît derrière, on ne le voit pas défiler autour */
   main::before {
     content: "";
     position: fixed;
-    top: 0; left: 0; right: 0;
-    height: calc(var(--map-h) + 28px);
+    left: 0; right: 0; bottom: 0;
+    height: calc(var(--map-h) + var(--gap) * 2 + var(--safe-b) + 24px);
     z-index: 3;
     pointer-events: none;
-    background: linear-gradient(to bottom, var(--bg) calc(100% - 28px), transparent);
+    background: linear-gradient(to top, var(--bg) calc(100% - 24px), transparent);
     transition: height .5s var(--ease);
   }
 
   main {
     margin-left: 0;
-    padding: calc(var(--map-h) + 20px) 14px 30vh;
-    transition: padding-top .5s var(--ease);
+    padding: 20px 14px calc(var(--map-h) + var(--gap) * 2 + var(--safe-b) + 30vh);
+    transition: padding-bottom .5s var(--ease);
   }
-  html { scroll-padding-top: calc(var(--map-h) + 16px); }
-  .hero { min-height: calc(100svh - var(--map-h)); padding-block: 4vh; margin-bottom: 8vh; }
+  html { scroll-padding-top: 16px; }
+  .hero { min-height: calc(100svh - var(--map-h) - var(--gap) * 2); padding-block: 4vh; margin-bottom: 8vh; }
   .card { margin-bottom: 16vh; border-radius: 20px; }
+  .transport { font-size: .82rem; }
   .galerie { gap: 6px; }
   .galerie > * { border-radius: 12px; }
   .lightbox { grid-template-columns: 1fr; padding: 12px; }

@@ -349,7 +349,7 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 800px) {
-  .prive-gear { top: auto; bottom: 18px; right: 16px; }
+  .prive-gear { top: 12px; right: 12px; } /* carte en bas : la roue reste en haut */
   .pin-case { width: 52px; height: 60px; }
   .prive-tete { align-items: flex-start; }
   .prive-actions { width: 100%; }

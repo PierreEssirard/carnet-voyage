@@ -55,7 +55,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
   <article class="card" data-view="mtl-step:${k}" style="--c:${MONTREAL.couleur}">
     <div class="k">Montréal · Trajet ${k + 1}</div>
     <h3>${esc(s.titre)}</h3>
-    <div class="transport"><span>${tr.emoji}</span>${tr.label}<i></i>${esc(s.de.nom)} → ${esc(s.a.nom)}</div>
+    <div class="transport"><span>${tr.emoji}</span>${tr.label}<i></i><em>${esc(s.de.nom)} → ${esc(s.a.nom)}</em></div>
     <p>${esc(s.texte)}</p>
     ${medias(s, s.titre, cleCarnet(`${MONTREAL.titre}-${s.titre}`))}
   </article>`;

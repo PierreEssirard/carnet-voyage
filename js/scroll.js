@@ -17,7 +17,7 @@ export function suivreDefilement(selector, onView) {
       clearTimeout(minuterie);
       minuterie = setTimeout(() => onView(el.dataset.view), 180);
     }
-  }, { rootMargin: mobile ? "-55% 0px -35% 0px" : "-45% 0px -45% 0px" });
+  }, { rootMargin: mobile ? "-30% 0px -60% 0px" : "-45% 0px -45% 0px" });
 
   document.querySelectorAll(selector).forEach((el) => io.observe(el));
 }
