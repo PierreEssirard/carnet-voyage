@@ -15,7 +15,7 @@ export function suivreDefilement(selector, onView) {
       (el.classList.contains("card") ? el : el.querySelector(".card"))?.classList.add("active");
       // petit délai : évite de lancer dix vols de caméra si on défile vite
       clearTimeout(minuterie);
-      minuterie = setTimeout(() => onView(el.dataset.view), 180);
+      minuterie = setTimeout(() => onView(el.dataset.view), 140);
     }
   }, { rootMargin: mobile ? "-30% 0px -60% 0px" : "-45% 0px -45% 0px" });
 

@@ -342,16 +342,110 @@ export class Carte {
     this.mobile?.remove();
   }
 
-  /* ---------- Repères ---------- */
+  /* ---------- Repères ----------
+     Dessinés directement dans la carte (WebGL) et non plus en éléments HTML :
+     ils restent collés à leur lieu pendant les vols de caméra, l'inclinaison
+     et le redimensionnement — plus aucun point qui flotte ou saute. */
 
   repere(lonlat, nom, couleur, { base = false } = {}) {
-    const el = document.createElement("div");
-    el.className = "pin" + (base ? " base" : "");
-    el.style.setProperty("--c", couleur);
-    el.dataset.state = "hidden";
-    el.innerHTML = `<span class="pin-dot"></span><span class="pin-lbl"></span>`;
-    el.querySelector(".pin-lbl").textContent = nom;
-    new maplibregl.Marker({ element: el, anchor: "left", offset: [-9, 0] }).setLngLat(lonlat).addTo(this.map);
-    return el;
+    if (!this.reperes) this.initReperes();
+    const id = this.reperes.length;
+    this.reperes.push({
+      id, cible: "hidden",
+      v: { dot: 0, lbl: 0, taille: 1 },          // valeurs affichées (animées)
+      feature: { type: "Feature", id, geometry: { type: "Point", coordinates: lonlat },
+        properties: { nom, couleur, base: base ? 1 : 0 } },
+    });
+    clearTimeout(this.repTimer);
+    this.repTimer = setTimeout(() => this.majSourceReperes(), 0);   // une seule mise à jour groupée
+    return id;
+  }
+
+  initReperes() {
+    this.reperes = [];
+    this.repRaf = 0;
+    const map = this.map;
+    map.addSource("reperes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    const etat = (k, def) => ["coalesce", ["feature-state", k], def];
+    let police = map.getStyle().layers.find((l) => l.type === "symbol" && l.layout?.["text-font"])?.layout["text-font"];
+    if (!Array.isArray(police) || !police.every((f) => typeof f === "string")) police = ["Noto Sans Regular"];
+    const gras = police.map((f) => f.replace(/Regular|Italic/, "Bold"));
+    map.addLayer({ id: "reperes-halo", type: "circle", source: "reperes",
+      paint: {
+        "circle-radius": ["*", etat("taille", 1), ["case", ["==", ["get", "base"], 1], 13, 11]],
+        "circle-color": ["get", "couleur"],
+        "circle-opacity": ["*", etat("dot", 0), 0.22],
+        "circle-blur": 0.6,
+        "circle-pitch-alignment": "viewport",
+      } });
+    map.addLayer({ id: "reperes-point", type: "circle", source: "reperes",
+      paint: {
+        "circle-radius": ["*", etat("taille", 1), ["case", ["==", ["get", "base"], 1], 6, 5]],
+        "circle-color": ["get", "couleur"],
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+        "circle-opacity": etat("dot", 0),
+        "circle-stroke-opacity": etat("dot", 0),
+        "circle-pitch-alignment": "viewport",
+      } });
+    map.addLayer({ id: "reperes-nom", type: "symbol", source: "reperes",
+      layout: {
+        "text-field": ["get", "nom"],
+        "text-font": gras,
+        "text-size": 12.5,
+        "text-anchor": "left",
+        "text-offset": [0.95, 0],
+        "text-allow-overlap": true,        // pas de noms qui disparaissent / réapparaissent
+        "text-ignore-placement": true,
+        "text-pitch-alignment": "viewport",
+        "text-rotation-alignment": "viewport",
+      },
+      paint: {
+        "text-color": "#f5f5f7",
+        "text-halo-color": "rgba(0,0,0,.85)",
+        "text-halo-width": 1.6,
+        "text-halo-blur": 0.5,
+        "text-opacity": etat("lbl", 0),
+      } });
+  }
+
+  majSourceReperes() {
+    this.map.getSource("reperes")?.setData({ type: "FeatureCollection", features: this.reperes.map((r) => r.feature) });
+    this.reperes.forEach((r) => this.ecrireEtat(r));
+  }
+
+  ecrireEtat(r) {
+    this.map.setFeatureState({ source: "reperes", id: r.id }, r.v);
+  }
+
+  /** hidden · dot (point seul) · on (point + nom) · cur (étape en cours, plus gros) */
+  etatRepere(id, etat) {
+    const r = this.reperes?.[id];
+    if (!r || r.cible === etat) return;
+    r.cible = etat;
+    r.de = { ...r.v };
+    r.t0 = performance.now();
+    if (!this.repRaf) this.repRaf = requestAnimationFrame((t) => this.animerReperes(t));
+  }
+
+  animerReperes(now) {
+    const CIBLES = {
+      hidden: { dot: 0, lbl: 0, taille: 0.6 },
+      dot:    { dot: 0.9, lbl: 0, taille: 0.85 },
+      on:     { dot: 1, lbl: 1, taille: 1 },
+      cur:    { dot: 1, lbl: 1, taille: 1.35 },
+    };
+    const DUREE = reduceMotion ? 1 : 520;
+    let encore = false;
+    for (const r of this.reperes) {
+      if (!r.de) continue;
+      const k = Math.min(1, (now - r.t0) / DUREE);
+      const e = 1 - Math.pow(1 - k, 3);                   // easeOutCubic
+      const c = CIBLES[r.cible] || CIBLES.on;
+      for (const p of ["dot", "lbl", "taille"]) r.v[p] = r.de[p] + (c[p] - r.de[p]) * e;
+      this.ecrireEtat(r);
+      if (k < 1) encore = true; else r.de = null;
+    }
+    this.repRaf = encore ? requestAnimationFrame((t) => this.animerReperes(t)) : 0;
   }
 }

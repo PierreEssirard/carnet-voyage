@@ -16,6 +16,9 @@ function medias({ photos = [], video = "" }, nom, cle) {
   return `<div class="galerie n-${Math.min(items.length, 5)}" data-carnet="${esc(cle)}">${items.join("")}</div>${vid}`;
 }
 
+/* Un objet 3D par road trip (dans l'ordre des TRIPS) */
+const OBJETS = ["frontenac", "cntower", "empire", "sapin"];
+
 export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
   const sommaire = [
     { id: "montreal", titre: MONTREAL.titre, sous: MONTREAL.sousTitre, c: MONTREAL.couleur, img: MONTREAL.photos[0] },
@@ -51,6 +54,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
     <div class="k">Destination principale</div>
     <h2>${esc(MONTREAL.titre)}</h2>
     <p>${esc(MONTREAL.texte)}</p>
+    <div class="objet3d" data-objet="biosphere" aria-hidden="true"></div>
     ${MONTREAL.parcours.length ? `<p class="m">${MONTREAL.parcours.length} trajets dans la ville</p>` : ""}
     ${medias(MONTREAL, MONTREAL.titre, cleCarnet(MONTREAL.titre))}
   </section>`;
@@ -72,6 +76,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
     <div class="k">Vue d’ensemble</div>
     <h2>Les road trips.</h2>
     <p>${TRIPS.length} boucles au départ de ${esc(BASE.nom)}, entre le Québec, l’Ontario et l’État de New York.</p>
+    <div class="objet3d" data-objet="erable" aria-hidden="true"></div>
     <div class="chiffres">
       <div><b data-compte="4">0</b><span>mois sur place</span></div>
       <div><b data-compte="${TRIPS.length}">0</b><span>road trips</span></div>
@@ -91,6 +96,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
     <div class="k">${esc(t.kicker)} · ${esc(t.dates)}</div>
     <h2>${esc(t.titre)}</h2>
     <p>${esc(t.intro)}</p>
+    <div class="objet3d" data-objet="${OBJETS[i] || "erable"}" aria-hidden="true"></div>
     <div class="itineraire">${villes.map((v, k) => `<span style="--i:${k}">${esc(v)}</span>`).join("")}</div>
     <p class="m">${t.etapes.length} étape${t.etapes.length > 1 ? "s" : ""}</p>
   </section>`;

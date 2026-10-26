@@ -42,6 +42,7 @@ export function intro() {
   if (!section || !window.d3?.geoOrthographic) {      // librairie absente : on saute l'intro
     section?.remove();
     document.body.classList.remove("en-vol");
+    document.dispatchEvent(new CustomEvent("atterrissage"));   // l'accueil s'affiche quand même
     return;
   }
   const d3 = window.d3;
@@ -131,13 +132,13 @@ export function intro() {
     /* Sphère + bord */
     ctx.beginPath(); chemin({ type: "Sphere" });
     const g = ctx.createRadialGradient(w / 2 - r * 0.3, cy - r * 0.35, r * 0.1, w / 2, cy, r);
-    g.addColorStop(0, "#151517"); g.addColorStop(1, "#050506");
+    g.addColorStop(0, "#1d1812"); g.addColorStop(1, "#070605");
     ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.stroke();
+    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(226,196,140,.22)"; ctx.stroke();
 
     /* Méridiens et parallèles */
     ctx.beginPath(); chemin(graticule);
-    ctx.strokeStyle = `rgba(255,255,255,${0.05 * (1 - a)})`; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.strokeStyle = `rgba(226,196,140,${0.08 * (1 - a)})`; ctx.lineWidth = 0.6; ctx.stroke();
 
     /* Continents en points (ombrés vers le bord) */
     const [rl, rp] = proj.rotate();
@@ -150,18 +151,18 @@ export function intro() {
       if (cosc <= 0.02) continue;
       const [x, y] = proj([lon, lat]);
       if (x < -4 || y < -4 || x > w + 4 || y > h + 4) continue;
-      ctx.fillStyle = `rgba(245,245,247,${(0.12 + 0.5 * cosc) * (1 - a * 0.6) * apparition})`;
+      ctx.fillStyle = `rgba(236,214,170,${(0.12 + 0.55 * cosc) * (1 - a * 0.6) * apparition})`;
       ctx.fillRect(x - taille / 2, y - taille / 2, taille, taille);
     }
 
     /* Route : pointillés à venir, trait plein déjà parcouru */
     const n = Math.round(f * (trace.length - 1));
     ctx.lineCap = "round";
-    ctx.setLineDash([2, 5]); ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(255,255,255,.35)";
+    ctx.setLineDash([2, 5]); ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(226,196,140,.45)";
     ctx.beginPath(); chemin({ type: "LineString", coordinates: trace.slice(Math.max(0, n)) }); ctx.stroke();
     ctx.setLineDash([]);
     if (n > 0) {
-      ctx.lineWidth = 2; ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2; ctx.strokeStyle = "#f3d9a4";
       ctx.beginPath(); chemin({ type: "LineString", coordinates: [...trace.slice(0, n + 1), vol(f)] }); ctx.stroke();
     }
 
@@ -174,7 +175,7 @@ export function intro() {
       ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 7); ctx.fill();
       ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(x, y, 8 + 3 * Math.sin(t / 500), 0, 7); ctx.stroke();
-      ctx.font = `italic 400 ${Math.round(Math.min(34, Math.max(20, r / 14)))}px "Instrument Serif", serif`;
+      ctx.font = `300 ${Math.round(Math.min(30, Math.max(18, r / 16)))}px Inter, system-ui, sans-serif`;
       ctx.textAlign = cote > 0 ? "left" : "right";
       ctx.fillText(nom, x + cote * 16, y - 10);
       ctx.globalAlpha = 1;
@@ -229,12 +230,15 @@ export function intro() {
   };
 
   let apparition = 0;                      // les continents apparaissent en fondu
+  let tPrec = 0;
   const boucle = (t) => {
-    if (points.length && apparition < 1) { apparition = Math.min(1, apparition + 0.025); besoin = true; }
+    const dt = Math.min(50, tPrec ? t - tPrec : 16.7); tPrec = t;
+    if (points.length && apparition < 1) { apparition = Math.min(1, apparition + dt / 700); besoin = true; }
     lireDefilement();
     const avant = p;
-    p += (cible - p) * (reduceMotion ? 1 : 0.11);
-    if (Math.abs(cible - p) < 0.0004) p = cible;
+    // inertie identique à 60 Hz, 120 Hz ou 144 Hz (sinon ça saccade sur les écrans rapides)
+    p += (cible - p) * (reduceMotion ? 1 : 1 - Math.pow(1 - 0.16, dt / 16.7));
+    if (Math.abs(cible - p) < 0.0002) p = cible;
     const visible = section.getBoundingClientRect().bottom > 0;
     if (!visible || cible >= 0.999) {          // intro dépassée (même d'un coup) : le site est rendu
       if (enVol) { enVol = false; document.body.classList.remove("en-vol"); }
@@ -245,8 +249,12 @@ export function intro() {
       try { dessiner(t); } catch (err) { console.error("intro", err); }
       besoin = false; horloge = t;
     }
+    if (!visible && p === cible) { dort = true; return; }   // intro dépassée : la boucle s'endort
     requestAnimationFrame(boucle);
   };
+  let dort = false;
+  const reveiller = () => { if (dort) { dort = false; tPrec = 0; requestAnimationFrame(boucle); } };
+  addEventListener("scroll", () => { if (dort && scrollY < section.offsetHeight) reveiller(); }, { passive: true });
 
   addEventListener("resize", redimensionner);
   redimensionner();

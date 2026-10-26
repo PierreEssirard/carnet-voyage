@@ -1,18 +1,22 @@
 /* Point d'entrée : relie le récit, la carte, le défilement et les effets. */
 
 import { BASE, MONTREAL, TRIPS, TRANSPORTS } from "./data.js?v=5";
-import { renderStory } from "./story.js?v=5";
-import { createMap, Carte } from "./map.js?v=5";
+import { renderStory } from "./story.js?v=6";
+import { createMap, Carte } from "./map.js?v=6";
 import { itineraire } from "./routing.js?v=5";
-import { suivreDefilement } from "./scroll.js?v=5";
+import { suivreDefilement } from "./scroll.js?v=6";
 import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, curseurPhoto, badgeRotatif, suiviDefilement,
-  rotateurHero, apercuSommaire, compteurs, brouillage, aimants, attaques } from "./effets.js?v=5";
+  rotateurHero, apercuSommaire, compteurs, brouillage, aimants, attaques, blocs3D, hud, hudCoord, grain, brume, chargement } from "./effets.js?v=13";
 import { ll } from "./geo.js?v=5";
-import { intro } from "./intro.js?v=5";
+import { intro } from "./intro.js?v=8";
 import { odometre } from "./odometre.js?v=5";
+import { objets3D } from "./objets.js?v=1";
 
 /* 1. Le récit et les effets (avant la carte : le texte s'affiche tout de suite) */
 renderStory(document.getElementById("story"), { MONTREAL, TRIPS, TRANSPORTS, BASE });
+chargement();
+grain();
+hud();
 titresAnimes();
 attaques();
 apparitions();
@@ -28,6 +32,7 @@ curseurPhoto();
 suiviDefilement();
 barreProgression();
 visionneuse();
+objets3D();
 
 /* Bouton réduire / agrandir la carte */
 const racine = document.documentElement;
@@ -124,7 +129,7 @@ const pretsMtl = MONTREAL.parcours.map((s, k) => {
 });
 
 /* 4. Ce que montre la carte pour chaque partie du récit */
-const etat = (el, s) => { el.dataset.state = s; };
+const etat = (rep, s) => carte.etatRepere(rep, s);
 let tripTrace = -1;
 
 function legende(type, i, j) {
@@ -152,6 +157,12 @@ function afficher(vue, forcer = false) {
   racine.style.setProperty("--c-active", c);
   etiquette.textContent = txt;
 
+  /* HUD : coordonnées du lieu, brume de sable à l'entrée d'un road trip */
+  const lieu = type === "stop" ? ll(TRIPS[i].etapes[j]) : type === "trip" ? ll(TRIPS[i].etapes[0])
+    : type === "mtl-step" ? ll(MONTREAL.parcours[i].a) : ll(BASE);
+  hudCoord(lieu[0], lieu[1]);
+  if (type === "trip" || type === "overview") brume();
+
   if (!pret) { vueEnAttente = vue; return; }   // la carte rattrapera au chargement
   vueActuelle = vue;
 
@@ -174,7 +185,7 @@ function afficher(vue, forcer = false) {
     else if (n !== i) etat(el, "hidden");
     else etat(el, type === "stop" && m === j ? "cur" : "on");
   }));
-  repMtl.forEach((el) => etat(el, enVille ? "on" : "hidden"));
+  repMtl.forEach((rep) => etat(rep, enVille ? "on" : "hidden"));
   if (type === "mtl-step") {
     const s = MONTREAL.parcours[i];
     const noms = lieuxParcours(s).map((p) => p.nom);

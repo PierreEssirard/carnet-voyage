@@ -44,8 +44,10 @@ export function titresAnimes() {
   document.querySelectorAll("#story :is(h1, h2, h3):not(.h-hero)").forEach((h) => {
     const txt = h.textContent.trim();
     h.setAttribute("aria-label", txt);
-    h.innerHTML = txt.split(/\s+/)
-      .map((m, i) => `<span class="mot" aria-hidden="true" style="--i:${i}"><span>${esc(m)}</span></span>`).join(" ");
+    const liste = txt.split(/\s+/);
+    const script = false;
+    h.innerHTML = liste
+      .map((m, i) => `<span class="mot${script && i === liste.length - 1 ? " mot-script" : ""}" aria-hidden="true" style="--i:${i}"><span>${esc(m)}</span></span>`).join(" ");
   });
 }
 
@@ -235,24 +237,41 @@ export function badgeRotatif() {
     photos qui se penchent selon la vitesse du défilement. */
 export function suiviDefilement() {
   if (reduceMotion) return;
-  const racine = document.documentElement;
-  const bandes = [...document.querySelectorAll(".bande")];
-  let dernierY = scrollY, vitesse = 0, raf = 0;
+  const bandes = [...document.querySelectorAll(".bande")].map((el) => ({ el, l: [...el.children] }));
+  const galeries = [...document.querySelectorAll(".galerie")];
+  const visibles = new Set();
+  const io = new IntersectionObserver((es) => es.forEach((e) => visibles[e.isIntersecting ? "add" : "delete"](e.target)),
+    { rootMargin: "200px 0px" });
+  galeries.forEach((g) => io.observe(g));
+  bandes.forEach((b) => io.observe(b.el));
+  let dernierY = scrollY, vitesse = 0, raf = 0, tPrec = 0, pencheAff = 99;
 
-  const image = () => {
+  const image = (t = performance.now()) => {
+    const dt = Math.min(50, tPrec ? t - tPrec : 16.7); tPrec = t;
     const y = scrollY;
-    vitesse += ((y - dernierY) - vitesse) * 0.12;   // vitesse lissée
+    const k = 1 - Math.pow(1 - 0.12, dt / 16.7);
+    vitesse += ((y - dernierY) * (16.7 / dt) - vitesse) * k;   // vitesse lissée (px par image à 60 Hz)
     dernierY = y;
-    const penche = Math.max(-5, Math.min(5, vitesse * 0.12));
-    racine.style.setProperty("--penche", `${penche.toFixed(2)}deg`);
-    racine.style.setProperty("--tour", `${(y * 0.18).toFixed(1)}deg`);
-    for (const el of bandes) {
-      const r = el.getBoundingClientRect();
-      if (r.bottom < -200 || r.top > innerHeight + 200) continue;
-      const p = 1 - (r.top + r.height) / (innerHeight + r.height); // 0 → 1 pendant la traversée
-      el.style.setProperty("--p", p.toFixed(4));
+    const penche = Math.max(-4, Math.min(4, vitesse * 0.1));
+    if (Math.abs(penche - pencheAff) > 0.01) {
+      pencheAff = penche;
+      const tr = `skewY(${penche.toFixed(2)}deg)`;
+      for (const g of galeries) if (visibles.has(g)) g.style.transform = tr;
     }
-    raf = Math.abs(vitesse) > 0.05 ? requestAnimationFrame(image) : 0;
+    const tour = document.querySelector(".badge-tour");
+    if (tour) tour.style.transform = `rotate(${(y * 0.18).toFixed(1)}deg)`;
+    for (const b of bandes) {
+      if (!visibles.has(b.el)) continue;
+      const r = b.el.getBoundingClientRect();
+      const p = 1 - (r.top + r.height) / (innerHeight + r.height); // 0 → 1 pendant la traversée
+      b.l[0].style.transform = `translate3d(${(-p * 28).toFixed(3)}%,0,0)`;
+      if (b.l[1]) b.l[1].style.transform = `translate3d(${(-28 + p * 28).toFixed(3)}%,0,0)`;
+    }
+    if (Math.abs(vitesse) > 0.05) raf = requestAnimationFrame(image);
+    else {
+      raf = 0; tPrec = 0; pencheAff = 0;
+      for (const g of galeries) g.style.transform = "";        // retour au repos partout
+    }
   };
   addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(image); }, { passive: true });
   image();
@@ -265,7 +284,7 @@ export function suiviDefilement() {
 
 const fin = (fn) => new Promise((r) => setTimeout(r, fn));
 
-/** « Carnet de … » : le dernier mot change toutes les 2,6 s. */
+/** « Carnet de … » : le dernier mot change toutes les 1,5 s. */
 export function rotateurHero() {
   const mots = [...document.querySelectorAll(".rot-mot")];
   if (mots.length < 2 || reduceMotion) return;
@@ -277,8 +296,8 @@ export function rotateurHero() {
     avant.classList.remove("on");
     avant.classList.add("part");
     mots[i].classList.add("on");
-    setTimeout(() => avant.classList.remove("part"), 900);
-  }, 2600);
+    setTimeout(() => avant.classList.remove("part"), 650);
+  }, 1500);
 }
 
 /** Survol d'une ligne du sommaire : un aperçu suit la souris. */
@@ -364,14 +383,20 @@ export function brouillage() {
 export function aimants() {
   if (reduceMotion || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
   const els = () => document.querySelectorAll(".badge, .retour, .map-toggle");
-  addEventListener("pointermove", (e) => {
+  let px = 0, py = 0, raf = 0;
+  const maj = () => {
+    raf = 0;
     els().forEach((el) => {
       const r = el.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      const dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height / 2);
       const portee = Math.max(r.width, r.height) * 0.9 + 30;
-      const d = Math.hypot(dx, dy);
-      el.style.translate = d < portee ? `${dx * 0.3}px ${dy * 0.3}px` : "0 0";
+      const v = Math.hypot(dx, dy) < portee ? `${(dx * 0.3).toFixed(1)}px ${(dy * 0.3).toFixed(1)}px` : "0px 0px";
+      if (el.style.translate !== v) el.style.translate = v;
     });
+  };
+  addEventListener("pointermove", (e) => {
+    px = e.clientX; py = e.clientY;
+    if (!raf) raf = requestAnimationFrame(maj);
   }, { passive: true });
 }
 
@@ -384,4 +409,231 @@ export function attaques() {
     if (!m) return;
     p.innerHTML = `<em class="attaque">${esc(m[1])}${m[2]}</em> ${esc(t.slice(m[0].length))}`;
   });
+}
+
+/* =========================================================
+   STYLE « ARCHIVE 3D »
+   Photos construites en blocs 3D qui s'assemblent au défilement
+   puis explosent vers la caméra, interface façon HUD, grain,
+   brume de sable entre les chapitres, chargement 0 → 100.
+   ========================================================= */
+
+const lisse = (x) => x * x * (3 - 2 * x);
+const borne = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+/* aléa déterministe (les blocs gardent leur trajectoire) */
+const alea = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+/** Photos en blocs 3D, pilotées par le défilement. */
+export function blocs3D() {
+  if (reduceMotion) return;
+  const galeries = [...document.querySelectorAll("#story .galerie[data-carnet]")];
+  if (!galeries.length) return;
+  const COLS = 6, RANGS = 4;
+  let graine = 1;
+  const etats = new Map();          // figure → { tuiles, seeds }
+
+  const construire = (fig) => {
+    if (!fig.isConnected) return;
+    fig.querySelector(".blocs")?.remove();
+    const img = fig.querySelector("img");
+    const W = fig.clientWidth, H = fig.clientHeight;
+    if (!W || !H) return;
+    const tw = W / COLS, th = H / RANGS;
+    const box = document.createElement("div");
+    box.className = "blocs";
+    box.setAttribute("aria-hidden", "true");
+    let bgW = W, bgH = H, ox = 0, oy = 0;
+    if (img && img.naturalWidth) {
+      const k = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      bgW = img.naturalWidth * k; bgH = img.naturalHeight * k;
+      ox = (W - bgW) / 2; oy = (H - bgH) / 2;
+    }
+    const src = img ? (img.currentSrc || img.src) : "";
+    const seeds = [];
+    for (let r = 0; r < RANGS; r++) for (let c = 0; c < COLS; c++) {
+      const t = document.createElement("i");
+      t.style.cssText = `left:${c * tw}px;top:${r * th}px;width:${tw + .5}px;height:${th + .5}px;` +
+        (src ? `background-image:url("${src.replace(/"/g, "%22")}");background-size:${bgW}px ${bgH}px;background-position:${ox - c * tw}px ${oy - r * th}px;` : "");
+      box.appendChild(t);
+      const g = graine++;
+      // les blocs du centre arrivent en premier, ceux des bords après
+      const centre = Math.hypot((c + .5) / COLS - .5, (r + .5) / RANGS - .5);
+      seeds.push({
+        x: (alea(g) - .5) * 2.4, y: (alea(g + 1) - .5) * 2.2,
+        z: 500 + alea(g + 2) * 1300,
+        rx: (alea(g + 3) - .5) * 220, ry: (alea(g + 4) - .5) * 260, rz: (alea(g + 5) - .5) * 120,
+        d: borne(centre * .55 + alea(g + 6) * .25, 0, .6),
+        W, H,
+      });
+    }
+    fig.appendChild(box);
+    etats.set(fig, { tuiles: [...box.children], seeds, img, fini: -1 });
+    fig.classList.add("bloc-fig");
+  };
+
+  const preparer = (g) => {
+    g.classList.add("blocs-galerie");
+    [...g.children].forEach((fig) => {
+      const img = fig.querySelector("img");
+      if (img && !img.complete) img.addEventListener("load", () => { construire(fig); maj(); }, { once: true });
+      construire(fig);
+    });
+  };
+  galeries.forEach(preparer);
+
+  // photos ajoutées plus tard (espace privé Firebase)
+  const mo = new MutationObserver((ms) => {
+    const touchees = new Set(ms.map((m) => m.target.closest?.(".galerie")).filter(Boolean));
+    touchees.forEach((g) => { [...etats.keys()].forEach((f) => { if (!f.isConnected) etats.delete(f); }); preparer(g); });
+    maj();
+  });
+  galeries.forEach((g) => mo.observe(g, { childList: true }));
+
+  const visibles = new Set();
+  const io = new IntersectionObserver((es) => es.forEach((e) => visibles[e.isIntersecting ? "add" : "delete"](e.target)),
+    { rootMargin: "30% 0px" });
+  galeries.forEach((g) => io.observe(g));
+
+  let raf = 0;
+  const maj = () => {
+    raf = 0;
+    const vh = innerHeight;
+    for (const g of visibles) {
+      for (const fig of g.children) {
+        const st = etats.get(fig);
+        if (!st) continue;
+        const r = fig.getBoundingClientRect();
+        // assemblage : le haut de la photo passe de 100 % à 30 % de l'écran
+        const a = borne((vh - r.top) / (vh * 0.7));
+        // explosion : le bas de la photo passe de 35 % à -15 % de l'écran
+        const e = borne((vh * 0.35 - r.bottom) / (vh * 0.5));
+        const etat = a >= 1 && e <= 0 ? 1 : 0;
+        if (etat === 1) {
+          if (st.fini !== 1) { st.fini = 1; fig.classList.add("bloc-ok"); }
+          continue;
+        }
+        if (st.fini !== 0) { st.fini = 0; fig.classList.remove("bloc-ok"); }
+        st.tuiles.forEach((t, k) => {
+          const s = st.seeds[k];
+          const la = lisse(borne((a - s.d) / (1 - s.d)));
+          const le = lisse(borne((e - s.d * .5) / (1 - s.d * .5)));
+          const m = 1 - la;                               // reste à parcourir
+          const x = s.x * s.W * (m + le * 1.2);
+          const y = s.y * s.H * (m + le * 1.2);
+          const z = -s.z * m + (s.z + 400) * le;          // arrive du fond, repart vers la caméra
+          const rx = s.rx * (m + le), ry = s.ry * (m + le), rz = s.rz * (m + le);
+          t.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${z.toFixed(1)}px) rotateX(${rx.toFixed(1)}deg) rotateY(${ry.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg)`;
+          t.style.opacity = (Math.min(1, la * 1.6) * (1 - le)).toFixed(3);
+          t.style.setProperty("--lueur", (m * (1 - le) * la * 4).toFixed(2));
+        });
+      }
+    }
+  };
+  const demander = () => { if (!raf) raf = requestAnimationFrame(maj); };
+  addEventListener("scroll", demander, { passive: true });
+  let attente = 0;
+  addEventListener("resize", () => {
+    clearTimeout(attente);
+    attente = setTimeout(() => { [...etats.keys()].forEach(construire); maj(); }, 200);
+  });
+  maj();
+}
+
+/** Interface façon viseur : coins, croix centrale, coordonnées du lieu, index de section. */
+export function hud() {
+  const el = document.createElement("div");
+  el.className = "hud";
+  el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `
+    <i class="hud-coin"></i><i class="hud-coin"></i><i class="hud-coin"></i><i class="hud-coin"></i>
+    <div class="hud-croix"></div>
+    <div class="hud-hd"><span>Carnet · Archive</span><span class="hud-idx">01 / 01</span></div>
+    <div class="hud-bg"><span class="hud-fl">▸</span> Défiler pour explorer</div>
+    <div class="hud-bd"><span class="hud-lat">45.5017° N</span><span class="hud-lon">73.5673° W</span></div>`;
+  document.body.appendChild(el);
+  const idx = el.querySelector(".hud-idx");
+  const total = document.querySelectorAll("#story [data-view]").length;
+  document.addEventListener("section", (e) => {
+    idx.textContent = `${String(e.detail + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+  });
+}
+
+/** Coordonnées du HUD qui défilent jusqu'au nouveau lieu. */
+let coordAnim = 0, coordAct = [-73.5673, 45.5017];
+export function hudCoord(lon, lat) {
+  const la = document.querySelector(".hud-lat"), lo = document.querySelector(".hud-lon");
+  if (!la || !lo || !isFinite(lon) || !isFinite(lat)) return;
+  const [l0, p0] = coordAct, t0 = performance.now();
+  cancelAnimationFrame(coordAnim);
+  const pas = (t) => {
+    const k = reduceMotion ? 1 : lisse(Math.min(1, (t - t0) / 900));
+    const x = l0 + (lon - l0) * k, y = p0 + (lat - p0) * k;
+    la.textContent = `${Math.abs(y).toFixed(4)}° ${y >= 0 ? "N" : "S"}`;
+    lo.textContent = `${Math.abs(x).toFixed(4)}° ${x >= 0 ? "E" : "W"}`;
+    if (k < 1) coordAnim = requestAnimationFrame(pas); else coordAct = [lon, lat];
+  };
+  coordAnim = requestAnimationFrame(pas);
+}
+
+/** Grain de pellicule + vignette chaude sur tout le site. */
+export function grain() {
+  const g = document.createElement("div");
+  g.className = "grain";
+  g.setAttribute("aria-hidden", "true");
+  document.body.appendChild(g);
+}
+
+/** Nuage de sable qui balaie l'écran à l'entrée d'un chapitre. */
+let brumeEl = null, brumeT = 0;
+export function brume() {
+  if (reduceMotion) return;
+  const t = performance.now();
+  if (t - brumeT < 1500) return;
+  brumeT = t;
+  if (!brumeEl) {
+    brumeEl = document.createElement("div");
+    brumeEl.className = "brume";
+    brumeEl.setAttribute("aria-hidden", "true");
+    brumeEl.innerHTML = "<i></i><i></i><i></i>";
+    document.body.appendChild(brumeEl);
+  }
+  brumeEl.classList.remove("on"); void brumeEl.offsetWidth; brumeEl.classList.add("on");
+}
+
+/** Écran de chargement : grille de plan, compteur 0 → 100. */
+export function chargement() {
+  const intro = document.getElementById("intro");
+  const el = document.createElement("div");
+  el.className = "chargement";
+  el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `
+    <div class="ch-sol"></div>
+    <svg class="ch-globe" viewBox="-100 -100 200 200">
+      <circle r="80"/><ellipse rx="80" ry="28"/><ellipse rx="80" ry="58"/><line x1="-80" x2="80"/>
+      <g class="ch-mer"><ellipse rx="28" ry="80"/><ellipse rx="58" ry="80"/><line y1="-80" y2="80"/></g>
+    </svg>
+    <div class="ch-hd"><span>Carnet · Archive n° 01</span><span>Amérique du Nord</span></div>
+    <div class="ch-bg"><small>Chargement de l’archive</small><b class="ch-n">0</b></div>
+    <div class="ch-bd"><span>45.5017° N</span><span>73.5673° W</span></div>
+    <div class="ch-barre"><i></i></div>`;
+  document.body.appendChild(el);
+  const n = el.querySelector(".ch-n"), barre = el.querySelector(".ch-barre i");
+  const duree = reduceMotion ? 200 : 2200, t0 = performance.now();
+  let pret = !intro;
+  const verifier = () => { if (intro?.classList.contains("terres-pretes") || !document.getElementById("intro")) pret = true; };
+  const pas = (t) => {
+    verifier();
+    let k = Math.min(1, (t - t0) / duree);
+    if (!pret) k = Math.min(k, .92);                 // on attend la planète
+    const v = Math.round(100 * (1 - Math.pow(1 - k, 2.2)));
+    n.textContent = v;
+    barre.style.transform = `scaleX(${v / 100})`;
+    if (v >= 100) {
+      el.classList.add("fin");
+      setTimeout(() => el.remove(), 1400);
+      return;
+    }
+    requestAnimationFrame(pas);
+  };
+  requestAnimationFrame(pas);
 }
