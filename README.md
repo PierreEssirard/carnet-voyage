@@ -16,6 +16,7 @@ carnet-voyages/
 │   ├── scroll.js       ← détecte la section affichée
 │   ├── effets.js       ← apparitions, barre de progression, visionneuse photo
 │   ├── routing.js      ← calcule les itinéraires sur les vraies routes
+│   ├── itineraires.js  ← routes pré-calculées (évite l’erreur 429 du serveur)
 │   └── geo.js          ← petits calculs géographiques
 └── assets/
     ├── photos/         ← tes photos

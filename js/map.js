@@ -52,6 +52,10 @@ export function createMap(containerId, camera) {
   });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), "top-left");
   map.scrollZoom.disable(); // la molette sert à faire défiler le récit
+  // icônes absentes du style (elles sont masquées de toute façon) : image vide, console propre
+  map.on("styleimagemissing", (e) => {
+    if (!map.hasImage(e.id)) map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
+  });
 
   return new Promise((resolve) => {
     map.on("load", () => {

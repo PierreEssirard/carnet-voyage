@@ -2,8 +2,8 @@
 
 import { BASE, MONTREAL, TRIPS, TRANSPORTS } from "./data.js?v=6";
 import { renderStory } from "./story.js?v=7";
-import { createMap, Carte } from "./map.js?v=7";
-import { itineraire } from "./routing.js?v=5";
+import { createMap, Carte } from "./map.js?v=8";
+import { itineraire } from "./routing.js?v=6";
 import { suivreDefilement } from "./scroll.js?v=6";
 import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, curseurPhoto, badgeRotatif, suiviDefilement,
   rotateurHero, apercuSommaire, compteurs, brouillage, aimants, attaques, blocs3D, hud, hudCoord, grain, brume, chargement } from "./effets.js?v=13";
