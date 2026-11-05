@@ -13,17 +13,17 @@ const DEM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}
 
 /* Palette de nuit */
 const NUIT = {
-  fond:      "#1c1c1e",
-  sol:       "#1f1f21",
-  vert:      "#1e2a21",
-  eau:       "#14273a",
-  eauLigne:  "#1c3550",
-  route:     "#2e2e31",
-  routeMaj:  "#3d3d41",
-  frontiere: "#4a4a4e",
-  bati:      "#2a2a2d",
-  texte:     "#8e8e93",
-  halo:      "#1c1c1e",
+  fond:      "#110e0a",
+  sol:       "#15110c",
+  vert:      "#19160e",
+  eau:       "#0c0b0a",
+  eauLigne:  "#2a2216",
+  route:     "#2b2318",
+  routeMaj:  "#4d3d24",
+  frontiere: "#6e5735",
+  bati:      "#231c13",
+  texte:     "#a8916b",
+  halo:      "#0b0907",
 };
 
 export const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -113,7 +113,7 @@ function batiments3D(map) {
   const paint = {
     // plus c'est haut, plus ça s'illumine
     "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 0],
-      0, "#2a2a2d", 40, "#313134", 120, "#38383c", 250, "#424246"],
+      0, "#2a2217", 40, "#3a2e1e", 120, "#4d3c25", 250, "#6a5232"],
     "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
     "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
     "fill-extrusion-opacity": 0.92,
@@ -138,9 +138,9 @@ function relief(map) {
 function ciel(map) {
   try {
     map.setSky({
-      "sky-color": "#0e0e10",
-      "horizon-color": "#1c1c1e",
-      "fog-color": "#1c1c1e",
+      "sky-color": "#120e09",
+      "horizon-color": "#3a2b19",
+      "fog-color": "#1d160e",
       "sky-horizon-blend": 0.6,
       "horizon-fog-blend": 0.7,
       "fog-ground-blend": 0.4,

@@ -4,8 +4,8 @@
    en plus pour le reste du site. */
 
 import { firebaseConfig, COMPTE, SUFFIXE, VERSION_SDK } from "./firebase-config.js?v=5";
-import { MONTREAL, TRIPS } from "./data.js?v=5";
-import { cleCarnet } from "./story.js?v=5";
+import { MONTREAL, TRIPS } from "./data.js?v=6";
+import { cleCarnet } from "./story.js?v=7";
 
 /* Dossiers « carnet/… » : photos affichées dans les sections du site (visibles par tous).
    Dossiers « prive/… » : visibles uniquement après le code. */

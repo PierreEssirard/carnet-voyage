@@ -17,7 +17,10 @@ function medias({ photos = [], video = "" }, nom, cle) {
 }
 
 /* Un objet 3D par road trip (dans l'ordre des TRIPS) */
-const OBJETS = ["frontenac", "cntower", "empire", "sapin"];
+const OBJETS = ["frontenac", "cntower", "empire", "sapin", "phare"];
+
+/* Nombre en toutes lettres (pour « cinq road trips ») */
+const enLettres = (n) => ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"][n] ?? String(n);
 
 export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
   const sommaire = [
@@ -38,7 +41,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
           `<span class="rot-mot${k === 0 ? " on" : ""}">${esc(m)}</span>`).join("")}</span></span></span>
       </h1>
       <div class="date-ligne"><span>Canada &amp; États-Unis</span><i></i><span>2026</span></div>
-      <p class="lead"><b>Quatre mois en Amérique du Nord.</b> Montréal comme camp de base, et quatre road trips autour.</p>
+      <p class="lead"><b>Quatre mois en Amérique du Nord.</b> Montréal comme camp de base, et ${enLettres(TRIPS.length)} road trips autour.</p>
       <ol class="sommaire">
         ${sommaire.map((s, n) => `
         <li style="--i:${n}"><a href="#${s.id}" style="--c:${s.c}" data-titre="${esc(s.titre)}"${s.img ? ` data-img="${esc(s.img)}"` : ""}>
@@ -75,7 +78,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
   <section class="card chapitre" data-view="overview">
     <div class="k">Vue d’ensemble</div>
     <h2>Les road trips.</h2>
-    <p>${TRIPS.length} boucles au départ de ${esc(BASE.nom)}, entre le Québec, l’Ontario et l’État de New York.</p>
+    <p>${TRIPS.length} boucles au départ de ${esc(BASE.nom)}, entre le Québec, l’Ontario, l’État de New York et la Nouvelle-Angleterre.</p>
     <div class="objet3d" data-objet="erable" aria-hidden="true"></div>
     <div class="chiffres">
       <div><b data-compte="4">0</b><span>mois sur place</span></div>
@@ -115,7 +118,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
   <section class="card chapitre" data-view="overview">
     <div class="k">Fin du carnet</div>
     <h2>Merci d’avoir suivi la route.</h2>
-    <p>Quatre mois, quatre road trips, une ville de cœur.</p>
+    <p>Quatre mois, ${enLettres(TRIPS.length)} road trips, une ville de cœur.</p>
     <div class="defile" aria-hidden="true"><div class="defile-piste">${[0, 1].map(() =>
       `<span>${[...new Set([MONTREAL.titre, ...TRIPS.flatMap((t) => t.etapes.map((e) => e.nom))])].map(esc).join("<i>·</i>")}<i>·</i></span>`).join("")}</div></div>
     <p><a class="retour" href="#accueil">Revenir au début</a></p>

@@ -2,7 +2,7 @@
    Estimation : distance à vol d'oiseau × un coefficient « route »
    (les routes ne sont jamais droites), vol Paris → Montréal compris. */
 
-import { BASE, MONTREAL, TRIPS } from "./data.js?v=5";
+import { BASE, MONTREAL, TRIPS } from "./data.js?v=6";
 import { dist, ll } from "./geo.js?v=5";
 
 const VOL = 5525;                                     // Paris → Montréal (km)

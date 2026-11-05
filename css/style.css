@@ -1684,16 +1684,53 @@ body::after {
 
 
 /* =========================================================
-   OBJETS 3D EN BLOCS DORÉS — plein écran, sur le côté, sans cadre
+   SCÈNES PHOTO « FILM » — à droite, fondues dans le noir
    ========================================================= */
-.objets-canvas {
-  position: fixed; inset: 0; width: 100vw; height: 100vh;
-  z-index: 4; pointer-events: none;
+.objet3d { display: block; height: 0; margin: 0; }
+.scene-film {
+  position: fixed; top: 0; bottom: 0; right: 0;
+  left: max(42vw, calc(var(--map-w) + var(--gap) * 3 + 200px));
+  z-index: 3; pointer-events: none; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 42%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 82%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0%, #000 42%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 82%, transparent 100%);
+  mask-composite: intersect;
   transition: opacity 1.2s var(--ease);
 }
-.en-vol .objets-canvas { opacity: 0; }
-html.objet-fond .objets-canvas { opacity: .5; }
-.objet3d { display: block; height: 0; margin: 0; }
+.en-vol .scene-film, .en-vol .fumee-canvas { opacity: 0 !important; }
+.plan { position: absolute; inset: 0; opacity: 0; visibility: hidden; }
+.plan.on { visibility: visible; }
+.plan img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; will-change: transform, filter;
+}
+/* Fond : même image, très floue, plus grande — remplit et fond les bords */
+.plan-fond { filter: blur(38px) saturate(.8) brightness(.55); opacity: .7; }
+/* Image nette, étalonnée dans les tons chauds du site */
+.plan-net { -webkit-mask-image: radial-gradient(120% 95% at 55% 50%, #000 55%, transparent 100%); mask-image: radial-gradient(120% 95% at 55% 50%, #000 55%, transparent 100%); }
+.scene-film::before {
+  /* étalonnage : teinte or + noirs chauds */
+  content: ""; position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(180deg, rgba(40, 26, 10, .25), rgba(120, 82, 34, .18) 60%, rgba(11, 9, 7, .55));
+  mix-blend-mode: multiply;
+}
+.scene-film::after {
+  /* voile côté texte + vignette */
+  content: ""; position: absolute; inset: 0; z-index: 3;
+  background:
+    linear-gradient(90deg, rgba(11, 9, 7, .85) 0%, rgba(11, 9, 7, .35) 35%, transparent 60%),
+    radial-gradient(110% 80% at 70% 50%, transparent 55%, rgba(11, 9, 7, .7));
+}
+.fumee-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 4; pointer-events: none; transition: opacity 1s var(--ease); }
+
+/* Les photos : étalonnage doux (couleurs réelles, chaudes, un peu désaturées) */
+.plan-net { filter: saturate(.88) sepia(.16) contrast(1.06) brightness(.86); }
+
+@media (max-width: 800px) {
+  .scene-film { left: 0; opacity: .38;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 75%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 75%, transparent); }
+}
 
 /* Le texte reste lisible quand l'objet passe derrière */
 main .card { text-shadow: 0 1px 18px rgba(11, 9, 7, .85); }
@@ -1710,3 +1747,228 @@ main .card { text-shadow: 0 1px 18px rgba(11, 9, 7, .85); }
   .odo { bottom: calc(var(--safe-b, 0px) + 18px); }
   html.objet-fond .objets-canvas { opacity: .42; }
 }
+
+
+/* Crédits des photos */
+.credits { margin-top: 48px; font: 400 10px/1.8 var(--mono); letter-spacing: .06em; color: var(--mute); max-width: 60ch; }
+.credits a { color: var(--sable); }
+
+/* Titres de chapitre : surgissent des profondeurs (flou + zoom) */
+.chapitre h2 .mot > span {
+  transition: transform 1.4s cubic-bezier(.16, 1, .3, 1), filter 1.2s cubic-bezier(.16, 1, .3, 1), opacity .9s var(--ease);
+  transition-delay: calc(var(--i) * 90ms + 150ms);
+  transform-origin: 50% 80%;
+}
+.card.chapitre:not(.vu) h2 .mot > span { transform: translateY(35%) scale(1.35); filter: blur(14px); opacity: 0; }
+.card.chapitre:not(.vu) h2 .mot { overflow: visible; }
+
+
+/* =========================================================
+   EFFETS CINÉMA SUR LES PHOTOS
+   ========================================================= */
+.scene-film > [class^="fx-"] { position: absolute; pointer-events: none; z-index: 4; }
+
+/* Rayons de lumière qui tombent d'en haut à droite */
+.fx-rayons {
+  inset: -40%; opacity: 0; transform-origin: 85% 10%;
+  background: repeating-conic-gradient(from 200deg at 85% 10%, rgba(255, 220, 160, .22) 0deg 2.2deg, transparent 2.2deg 7deg, rgba(255, 210, 150, .12) 7deg 8deg, transparent 8deg 15deg);
+  -webkit-mask-image: radial-gradient(60% 55% at 85% 10%, #000, transparent 75%);
+  mask-image: radial-gradient(60% 55% at 85% 10%, #000, transparent 75%);
+  filter: blur(6px); mix-blend-mode: screen;
+}
+
+/* Profondeur de champ : bords flous */
+.fx-dof {
+  inset: 0;
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  -webkit-mask-image: radial-gradient(55% 60% at 62% 50%, transparent 55%, #000 100%);
+  mask-image: radial-gradient(55% 60% at 62% 50%, transparent 55%, #000 100%);
+}
+
+/* Fuite de lumière (transitions) */
+.fx-fuite {
+  inset: -10% -20%; opacity: 0; mix-blend-mode: screen;
+  background:
+    radial-gradient(40% 55% at 30% 60%, rgba(255, 140, 50, .55), transparent 70%),
+    radial-gradient(30% 40% at 60% 30%, rgba(255, 200, 120, .45), transparent 70%),
+    radial-gradient(25% 30% at 80% 75%, rgba(255, 90, 40, .35), transparent 70%);
+  filter: blur(20px);
+}
+
+/* Éclat qui balaie la photo à son apparition */
+.fx-balayage {
+  inset: 0; opacity: 0; mix-blend-mode: screen;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 236, 200, .0) 40%, rgba(255, 236, 200, .55) 50%, rgba(255, 236, 200, 0) 60%, transparent 65%);
+  background-size: 250% 100%;
+}
+.fx-balayage.on { animation: fxBalayage 1.9s cubic-bezier(.65, 0, .35, 1) .35s both; }
+@keyframes fxBalayage { 0% { opacity: 1; background-position: 120% 0; } 100% { opacity: 1; background-position: -40% 0; } }
+
+/* Reflet d'objectif anamorphique sur la cible */
+.fx-flare { width: 0; height: 0; opacity: 0; mix-blend-mode: screen; }
+.fx-flare i {
+  position: absolute; left: -45vw; top: -1.5px; width: 90vw; height: 3px; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 245, 225, .95), rgba(255, 200, 130, .5) 18%, rgba(255, 170, 90, .0) 60%);
+  filter: blur(1px);
+}
+.fx-flare b {
+  position: absolute; left: -90px; top: -90px; width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 230, .95) 0, rgba(255, 214, 150, .45) 18%, rgba(255, 180, 100, .12) 45%, transparent 70%);
+}
+.fx-flare b::after {
+  content: ""; position: absolute; left: 130%; top: 140%; width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid rgba(255, 210, 150, .25); background: radial-gradient(circle, rgba(140, 200, 255, .12), transparent 70%);
+}
+
+/* Viseur qui accroche la cible */
+.fx-reticule {
+  --taille: 260px;
+  width: var(--taille); height: var(--taille); margin: calc(var(--taille) / -2) 0 0 calc(var(--taille) / -2);
+  opacity: 0; color: var(--or); font: 400 9.5px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+}
+.fx-reticule > i { position: absolute; width: 16px; height: 16px; border: 0 solid currentColor; opacity: .85; transition: border-color .3s; }
+.fx-reticule > i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.fx-reticule > i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.fx-reticule > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.fx-reticule > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+.fx-reticule::before, .fx-reticule::after { content: ""; position: absolute; left: 50%; top: 50%; background: currentColor; opacity: .6; }
+.fx-reticule::before { width: 1px; height: 10px; margin: -5px 0 0 -.5px; }
+.fx-reticule::after { width: 10px; height: 1px; margin: -.5px 0 0 -5px; }
+.fx-r-lbl { position: absolute; left: calc(100% + 14px); top: 0; white-space: nowrap; color: var(--sable); }
+.fx-r-lbl em { font-style: normal; color: var(--or); }
+.fx-r-lbl b { font: 200 26px/1 var(--fin); letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; vertical-align: -6px; margin: 0 4px; }
+.fx-r-zoom { position: absolute; left: calc(100% + 14px); top: 36px; color: var(--mute); }
+.fx-reticule.verrou { color: #fff3d6; }
+.fx-reticule.verrou > i { animation: fxVerrou .9s ease-in-out infinite alternate; }
+@keyframes fxVerrou { to { opacity: .35; } }
+
+/* Respiration de pellicule (exposition qui vibre très légèrement) */
+.scene-film .plan.on .plan-net { animation: fxRespire 4.5s ease-in-out infinite alternate; }
+@keyframes fxRespire { from { opacity: 1; } to { opacity: .93; } }
+
+@media (max-width: 800px) {
+  .fx-reticule, .fx-flare, .fx-dof { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-rayons, .fx-fuite, .fx-balayage, .fx-flare { display: none; }
+}
+
+/* =========================================================
+   EFFETS CINÉMA SUR LA CARTE
+   ========================================================= */
+#mapwrap { background: #0b0907; box-shadow: 0 0 0 1px rgba(226, 196, 140, .14), 0 30px 80px -30px rgba(0, 0, 0, .9); }
+.carte-fx { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.maptag, .map-toggle, .map-poignee { z-index: 3; }
+.carte-fx > * { position: absolute; }
+
+/* Étalonnage : ombres chaudes, vignette, voile en bas */
+.cfx-etalon {
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 45%, transparent 50%, rgba(8, 6, 4, .75)),
+    linear-gradient(180deg, rgba(60, 40, 15, .18), transparent 30%, transparent 70%, rgba(11, 9, 7, .55));
+  mix-blend-mode: multiply;
+}
+.cfx-etalon::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(255, 196, 120, .08), transparent 45%);
+  mix-blend-mode: screen;
+}
+
+/* Rayons de lumière */
+.cfx-rayons {
+  inset: -50%; opacity: .5; transform-origin: 90% 0%;
+  background: repeating-conic-gradient(from 200deg at 90% 0%, rgba(255, 220, 160, .16) 0deg 2deg, transparent 2deg 8deg, rgba(255, 210, 150, .08) 8deg 9deg, transparent 9deg 16deg);
+  -webkit-mask-image: radial-gradient(55% 55% at 90% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(55% 55% at 90% 0%, #000, transparent 75%);
+  filter: blur(5px); mix-blend-mode: screen;
+  animation: cfxRayons 40s linear infinite alternate;
+}
+@keyframes cfxRayons { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+
+/* Poussière d'or qui flotte */
+.cfx-poussiere {
+  inset: -20%; opacity: .55; mix-blend-mode: screen;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 20%, rgba(243, 215, 160, .9), transparent),
+    radial-gradient(1px 1px at 32% 70%, rgba(243, 215, 160, .8), transparent),
+    radial-gradient(1.5px 1.5px at 58% 35%, rgba(243, 215, 160, .7), transparent),
+    radial-gradient(1px 1px at 76% 82%, rgba(243, 215, 160, .8), transparent),
+    radial-gradient(2.5px 2.5px at 88% 12%, rgba(243, 215, 160, .35), transparent),
+    radial-gradient(1px 1px at 44% 52%, rgba(243, 215, 160, .7), transparent),
+    radial-gradient(3px 3px at 22% 88%, rgba(243, 215, 160, .25), transparent);
+  background-size: 280px 280px;
+  animation: cfxPoussiere 38s linear infinite;
+}
+@keyframes cfxPoussiere { to { background-position: 140px -280px; } }
+
+/* Fuite de lumière pendant les vols */
+.cfx-fuite {
+  inset: -10% -30%; opacity: 0; mix-blend-mode: screen; filter: blur(18px);
+  background:
+    radial-gradient(40% 50% at 30% 60%, rgba(255, 140, 50, .5), transparent 70%),
+    radial-gradient(30% 40% at 65% 30%, rgba(255, 205, 130, .4), transparent 70%);
+}
+
+/* Éclat qui balaie la carte à chaque nouvelle vue */
+.cfx-balayage {
+  inset: 0; opacity: 0; mix-blend-mode: screen;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 236, 200, .4) 50%, transparent 62%);
+  background-size: 260% 100%;
+}
+.cfx-balayage.on { animation: fxBalayage 1.6s cubic-bezier(.65, 0, .35, 1) .2s both; }
+
+/* Viseur central */
+.cfx-reticule {
+  left: 50%; top: 50%; width: 110px; height: 110px; margin: -55px 0 0 -55px;
+  color: var(--or); font: 400 9px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase;
+  transition: width .9s cubic-bezier(.16, 1, .3, 1), height .9s cubic-bezier(.16, 1, .3, 1), margin .9s cubic-bezier(.16, 1, .3, 1), opacity .5s;
+  opacity: .85;
+}
+.cfx-reticule > i { position: absolute; width: 12px; height: 12px; border: 0 solid currentColor; }
+.cfx-reticule > i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.cfx-reticule > i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.cfx-reticule > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.cfx-reticule > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+.cfx-reticule::before, .cfx-reticule::after { content: ""; position: absolute; left: 50%; top: 50%; background: currentColor; opacity: .7; }
+.cfx-reticule::before { width: 1px; height: 9px; margin: -4.5px 0 0 -.5px; }
+.cfx-reticule::after { width: 9px; height: 1px; margin: -.5px 0 0 -4.5px; }
+.cfx-reticule > span { position: absolute; left: 0; white-space: nowrap; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+.cfx-nom { top: calc(100% + 10px); color: var(--ink); font: 300 13px/1 var(--fin); letter-spacing: -.01em; text-transform: none; max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
+.cfx-alt { top: calc(100% + 30px); color: var(--sable); }
+.cfx-alt b { font: 200 20px/1 var(--fin); color: var(--ink); letter-spacing: -.02em; vertical-align: -4px; font-variant-numeric: tabular-nums; }
+.cfx-alt em { font-style: normal; color: var(--or); }
+.cfx-zoom { top: calc(100% + 56px); color: var(--mute); }
+/* en vol : le viseur s'ouvre et cherche */
+.carte-fx.vol .cfx-reticule { width: 200px; height: 200px; margin: -100px 0 0 -100px; opacity: .55; }
+.carte-fx.vol .cfx-reticule > i { animation: fxVerrou .35s ease-in-out infinite alternate; }
+/* verrouillé : il se resserre d'un coup et flashe */
+.carte-fx.verrou .cfx-reticule { animation: cfxVerrou .7s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes cfxVerrou { 0% { color: #fff3d6; } 100% { color: var(--or); } }
+.carte-fx[data-type="mtl-step"] .cfx-reticule { opacity: 0; }
+
+/* Reflet d'objectif sur la cible, à l'arrivée */
+.cfx-flare { left: 50%; top: 50%; width: 0; height: 0; opacity: 0; mix-blend-mode: screen; }
+.cfx-flare i { position: absolute; left: -220px; top: -1px; width: 440px; height: 2px; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 245, 225, .9), rgba(255, 200, 130, .45) 20%, transparent 62%); }
+.cfx-flare b { position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 230, .8) 0, rgba(255, 214, 150, .35) 20%, transparent 65%); }
+.carte-fx.verrou .cfx-flare { animation: cfxFlare 2.6s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes cfxFlare { 0% { opacity: 0; transform: scale(.4); } 18% { opacity: 1; transform: scale(1.15); } 100% { opacity: calc(.45 * var(--p, 1)); transform: scale(1); } }
+.carte-fx[data-type="overview"] .cfx-flare, .carte-fx[data-type="trip"] .cfx-flare, .carte-fx[data-type="mtl-step"] .cfx-flare { display: none; }
+
+/* Coins du cadre + bandeau d'infos en bas */
+.cfx-coins { inset: 10px; }
+.cfx-coins i { position: absolute; width: 14px; height: 14px; border: 0 solid rgba(226, 196, 140, .55); }
+.cfx-coins i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.cfx-coins i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.cfx-coins i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.cfx-coins i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+.cfx-bas { left: 18px; bottom: 16px; display: flex; gap: 14px; font: 400 9px/1 var(--mono); letter-spacing: .18em; color: var(--sable); opacity: .8; font-variant-numeric: tabular-nums; text-shadow: 0 0 6px #000; }
+.cfx-cap { color: var(--or); }
+
+/* Étiquette du lieu, accordée au style */
+.maptag { background: rgba(11, 9, 7, .6) !important; border: 1px solid rgba(226, 196, 140, .2); font-family: var(--mono) !important; font-size: 10px !important; letter-spacing: .14em; text-transform: uppercase; color: var(--sable) !important; }
+
+.carte-mini .cfx-reticule > span, .carte-mini .cfx-bas { display: none; }
+@media (prefers-reduced-motion: reduce) { .cfx-rayons, .cfx-poussiere, .cfx-fuite, .cfx-balayage { display: none; } }

@@ -1,8 +1,8 @@
 /* Point d'entrée : relie le récit, la carte, le défilement et les effets. */
 
-import { BASE, MONTREAL, TRIPS, TRANSPORTS } from "./data.js?v=5";
-import { renderStory } from "./story.js?v=6";
-import { createMap, Carte } from "./map.js?v=6";
+import { BASE, MONTREAL, TRIPS, TRANSPORTS } from "./data.js?v=6";
+import { renderStory } from "./story.js?v=7";
+import { createMap, Carte } from "./map.js?v=7";
 import { itineraire } from "./routing.js?v=5";
 import { suivreDefilement } from "./scroll.js?v=6";
 import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, curseurPhoto, badgeRotatif, suiviDefilement,
@@ -10,7 +10,8 @@ import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, cur
 import { ll } from "./geo.js?v=5";
 import { intro } from "./intro.js?v=8";
 import { odometre } from "./odometre.js?v=5";
-import { objets3D } from "./objets.js?v=3";
+import { objets3D } from "./objets.js?v=7";
+import { effetsCarte } from "./carte-fx.js?v=1";
 
 /* 1. Le récit et les effets (avant la carte : le texte s'affiche tout de suite) */
 renderStory(document.getElementById("story"), { MONTREAL, TRIPS, TRANSPORTS, BASE });
@@ -99,6 +100,7 @@ if (matchMedia("(max-width: 800px)").matches) {
 }
 map = await createMap("map", MONTREAL.camera);
 const carte = new Carte(map);
+const fxCarte = effetsCarte(map);
 
 /* Points de chaque road trip (avec départ/retour Montréal si boucle) */
 const pointsTrip = TRIPS.map((t) => [
@@ -171,6 +173,7 @@ function afficher(vue, forcer = false) {
 
   if (!pret) { vueEnAttente = vue; return; }   // la carte rattrapera au chargement
   vueActuelle = vue;
+  fxCarte.vue(txt, type);
 
   /* Lignes */
   TRIPS.forEach((_, n) => {
