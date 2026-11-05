@@ -1972,3 +1972,45 @@ main .card { text-shadow: 0 1px 18px rgba(11, 9, 7, .85); }
 
 .carte-mini .cfx-reticule > span, .carte-mini .cfx-bas { display: none; }
 @media (prefers-reduced-motion: reduce) { .cfx-rayons, .cfx-poussiere, .cfx-fuite, .cfx-balayage { display: none; } }
+
+
+/* =========================================================
+   FLUIDITÉ — version allégée des effets
+   Règle : pendant le défilement, on n'anime que transform et
+   opacity (calculés par la carte graphique). Plus de flou
+   en direct, de calques en mode « fusion » sur la carte, de
+   verre dépoli au-dessus d'éléments qui bougent, ni de grain animé.
+   ========================================================= */
+:root { --material: none; --panel: rgba(24, 20, 15, .92); }
+.navbar { background: rgba(11, 9, 7, .94); }
+.badge { background: rgba(11, 9, 7, .8); }
+
+/* Grain : fixe (il était redessiné six fois par seconde sur tout l'écran) */
+.grain { animation: none; inset: 0; }
+
+/* Titres et textes : apparition sans flou */
+.mot, .chapitre h2 .mot > span, .bande { transition-property: opacity, transform; }
+.card:not(.vu) .mot,
+.card.chapitre:not(.vu) h2 .mot > span,
+.card.chapitre:not(.vu) .bande,
+.rot-mot:not(.on) { filter: none; }
+@supports (animation-timeline: view()) {
+  @keyframes heroRecule { to { opacity: 0; transform: scale(.94) translateY(-4%); } }
+  /* photos : fondu + léger zoom au lieu d'un découpage redessiné à chaque image */
+  @keyframes devoile { from { opacity: .2; transform: translateY(40px) scale(.96); } to { opacity: 1; transform: none; } }
+}
+
+/* Panneau photo des chapitres : une seule image, sans filtre ni masque */
+.scene-film::before { mix-blend-mode: normal; background: linear-gradient(180deg, rgba(40, 26, 10, .28), rgba(70, 46, 16, .22) 60%, rgba(11, 9, 7, .55)); }
+.plan img.plan-net {
+  inset: auto; width: auto; height: auto; max-width: none;
+  object-fit: fill; filter: none; will-change: transform;
+  -webkit-mask-image: none; mask-image: none;
+  animation: none;
+}
+.plan-fond, .fumee-canvas, .fx-rayons, .fx-dof, .fx-fuite, .fx-balayage, .fx-flare { display: none !important; }
+
+/* Carte : vignette en fondu normal, plus de rayons ni de poussière animés */
+.cfx-etalon { mix-blend-mode: normal; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(8, 6, 4, .55)); }
+.cfx-etalon::after { display: none; }
+.cfx-rayons, .cfx-poussiere, .cfx-fuite, .cfx-balayage, .cfx-flare { display: none !important; }

@@ -238,13 +238,12 @@ export function badgeRotatif() {
 export function suiviDefilement() {
   if (reduceMotion) return;
   const bandes = [...document.querySelectorAll(".bande")].map((el) => ({ el, l: [...el.children] }));
-  const galeries = [...document.querySelectorAll(".galerie")];
+  const tour = document.querySelector(".badge-tour");
   const visibles = new Set();
   const io = new IntersectionObserver((es) => es.forEach((e) => visibles[e.isIntersecting ? "add" : "delete"](e.target)),
     { rootMargin: "200px 0px" });
-  galeries.forEach((g) => io.observe(g));
   bandes.forEach((b) => io.observe(b.el));
-  let dernierY = scrollY, vitesse = 0, raf = 0, tPrec = 0, pencheAff = 99;
+  let dernierY = scrollY, vitesse = 0, raf = 0, tPrec = 0;
 
   const image = (t = performance.now()) => {
     const dt = Math.min(50, tPrec ? t - tPrec : 16.7); tPrec = t;
@@ -252,13 +251,6 @@ export function suiviDefilement() {
     const k = 1 - Math.pow(1 - 0.12, dt / 16.7);
     vitesse += ((y - dernierY) * (16.7 / dt) - vitesse) * k;   // vitesse lissée (px par image à 60 Hz)
     dernierY = y;
-    const penche = Math.max(-4, Math.min(4, vitesse * 0.1));
-    if (Math.abs(penche - pencheAff) > 0.01) {
-      pencheAff = penche;
-      const tr = `skewY(${penche.toFixed(2)}deg)`;
-      for (const g of galeries) if (visibles.has(g)) g.style.transform = tr;
-    }
-    const tour = document.querySelector(".badge-tour");
     if (tour) tour.style.transform = `rotate(${(y * 0.18).toFixed(1)}deg)`;
     for (const b of bandes) {
       if (!visibles.has(b.el)) continue;
@@ -269,8 +261,7 @@ export function suiviDefilement() {
     }
     if (Math.abs(vitesse) > 0.05) raf = requestAnimationFrame(image);
     else {
-      raf = 0; tPrec = 0; pencheAff = 0;
-      for (const g of galeries) g.style.transform = "";        // retour au repos partout
+      raf = 0; tPrec = 0;
     }
   };
   addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(image); }, { passive: true });
@@ -586,7 +577,7 @@ export function grain() {
 /** Nuage de sable qui balaie l'écran à l'entrée d'un chapitre. */
 let brumeEl = null, brumeT = 0;
 export function brume() {
-  if (reduceMotion) return;
+  return;              // désactivée : un grand calque flou plein écran faisait saccader le site
   const t = performance.now();
   if (t - brumeT < 1500) return;
   brumeT = t;

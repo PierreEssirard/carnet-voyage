@@ -39,7 +39,7 @@ export function createMap(containerId, camera) {
     pitch: camera.pitch,
     bearing: camera.bearing,
     maxPitch: 75,
-    pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5), // allège les écrans Retina
+    pixelRatio: Math.min(window.devicePixelRatio || 1, 1.25), // allège les écrans Retina
     fadeDuration: 150,
     attributionControl: { compact: true },
     // Sur téléphone : un doigt fait défiler la page, deux doigts bougent la carte

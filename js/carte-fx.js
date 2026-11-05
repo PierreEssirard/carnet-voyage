@@ -1,12 +1,10 @@
 /* =========================================================
-   Effets « film » sur la carte : étalonnage doré, rayons de
-   lumière, poussière, viseur central (altitude, coordonnées,
-   zoom), reflet sur la cible, éclat et fuite de lumière à
-   chaque vol de caméra.
+   Habillage de la carte : vignette dorée et viseur central
+   (altitude, coordonnées, zoom). Version allégée : rien n'est
+   superposé en mode « fusion » au-dessus de la carte 3D.
    ========================================================= */
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const lisse = (x) => x * x * (3 - 2 * x);
 
 export function effetsCarte(map) {
   const cadre = document.getElementById("mapwrap");
@@ -16,11 +14,6 @@ export function effetsCarte(map) {
   el.setAttribute("aria-hidden", "true");
   el.innerHTML = `
     <div class="cfx-etalon"></div>
-    <div class="cfx-rayons"></div>
-    <div class="cfx-poussiere"></div>
-    <div class="cfx-fuite"></div>
-    <div class="cfx-balayage"></div>
-    <div class="cfx-flare"><i></i><b></b></div>
     <div class="cfx-reticule">
       <i></i><i></i><i></i><i></i>
       <span class="cfx-nom"></span>
@@ -32,8 +25,7 @@ export function effetsCarte(map) {
   cadre.insertBefore(el, cadre.querySelector("#map").nextSibling);
   const $ = (s) => el.querySelector(s);
   const ret = $(".cfx-reticule"), nom = $(".cfx-nom"), alt = $(".cfx-alt b"), unite = $(".cfx-u"),
-    zoom = $(".cfx-zoom"), lat = $(".cfx-lat"), lon = $(".cfx-lon"), cap = $(".cfx-cap"),
-    flare = $(".cfx-flare"), fuite = $(".cfx-fuite"), balayage = $(".cfx-balayage");
+    zoom = $(".cfx-zoom"), lat = $(".cfx-lat"), lon = $(".cfx-lon"), cap = $(".cfx-cap");
 
   /* Altitude de la caméra (approximation à partir du zoom) */
   const altitude = () => {
@@ -55,43 +47,26 @@ export function effetsCarte(map) {
   map.on("move", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; majInfos(); }); });
   majInfos();
 
-  /* Pendant un vol : le viseur cherche, la lumière fuit ; à l'arrivée : il verrouille, le reflet s'allume */
-  let enVol = false, t0 = 0, animFuite = 0;
-  const fuiteAnim = (t) => {
-    const k = Math.min(1, (t - t0) / 2200);
-    const v = enVol ? Math.min(1, k * 2.2) : Math.max(0, 1 - k * 1.6);
-    fuite.style.opacity = (v * .75).toFixed(3);
-    fuite.style.transform = `translateX(${(-25 + k * 50).toFixed(1)}%)`;
-    if (enVol || v > 0) animFuite = requestAnimationFrame(fuiteAnim); else animFuite = 0;
-  };
+  /* Pendant un vol : le viseur s'ouvre et cherche ; à l'arrivée : il se verrouille */
+  let enVol = false;
   map.on("movestart", (e) => {
     if (!e.originalEvent && !reduceMotion) {          // vol programmé (pas un geste de l'utilisateur)
-      enVol = true; t0 = performance.now();
+      enVol = true;
       el.classList.add("vol"); el.classList.remove("verrou");
-      if (!animFuite) animFuite = requestAnimationFrame(fuiteAnim);
     }
   });
   map.on("moveend", () => {
     if (!enVol) return;
-    enVol = false; t0 = performance.now();
+    enVol = false;
     el.classList.remove("vol");
     el.classList.remove("verrou"); void el.offsetWidth; el.classList.add("verrou");
   });
 
-  /* Lueur qui respire sur le reflet */
-  const pulse = (t) => {
-    flare.style.setProperty("--p", (.85 + .15 * Math.sin(t * .004)).toFixed(3));
-    requestAnimationFrame(pulse);
-  };
-  if (!reduceMotion) requestAnimationFrame(pulse);
-
   return {
-    /** À chaque changement de vue : nom de la cible, éclat qui balaie la carte. */
+    /** À chaque changement de vue : nom de la cible. */
     vue(texte, type) {
       nom.textContent = texte;
       el.dataset.type = type;
-      if (reduceMotion) return;
-      balayage.classList.remove("on"); void balayage.offsetWidth; balayage.classList.add("on");
     },
   };
 }
