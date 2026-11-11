@@ -96,7 +96,7 @@ export function renderStory(root, { MONTREAL, TRIPS, TRANSPORTS, BASE }) {
       <div class="bande-l">${Array(6).fill(`<span>${esc(t.titre)}</span><i>✦</i>`).join("")}</div>
       <div class="bande-l inverse">${Array(6).fill(`<span>${esc(t.kicker)}</span><i>—</i>`).join("")}</div>
     </div>
-    <div class="k">${esc(t.kicker)} · ${esc(t.dates)}</div>
+    <div class="k">${esc(t.kicker)}${t.dates ? ` · ${esc(t.dates)}` : ""}</div>
     <h2>${esc(t.titre)}</h2>
     <p>${esc(t.intro)}</p>
     <div class="objet3d" data-objet="${OBJETS[i] || "erable"}" aria-hidden="true"></div>
