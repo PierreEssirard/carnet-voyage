@@ -357,3 +357,6 @@ body.prive-actif .prive-gear { opacity: 0; pointer-events: none; }
   .galerie.prive-grille { grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .prive-panel { padding-bottom: 80px; }
 }
+/* Code à 6 chiffres ou plus : les cases rétrécissent pour tenir sur un téléphone */
+.pin { gap: min(12px, 2.4vw); }
+.pin-case { flex: 0 1 54px; min-width: 0; }

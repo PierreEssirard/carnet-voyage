@@ -3,7 +3,8 @@
    Firebase n'est chargé qu'au clic sur l'engrenage : aucun poids
    en plus pour le reste du site. */
 
-import { firebaseConfig, COMPTE, SUFFIXE, VERSION_SDK } from "./firebase-config.js?v=5";
+import { firebaseConfig, COMPTE, SUFFIXE, VERSION_SDK, LONGUEUR_CODE, APP_CHECK_CLE } from "./firebase-config.js?v=6";
+const N = Math.max(4, Math.min(8, LONGUEUR_CODE || 4));        // chiffres du code
 import { MONTREAL, TRIPS } from "./data.js?v=6";
 import { cleCarnet } from "./story.js?v=7";
 
@@ -38,6 +39,15 @@ function firebase() {
       import(base + "firebase-storage.js"),
     ]);
     const a = app.initializeApp(firebaseConfig);
+    /* Anti-robots : chaque requête vers Firebase porte un jeton reCAPTCHA prouvant
+       qu'elle vient de CE site, ouvert dans un vrai navigateur. Une fois « appliqué »
+       dans la console, les robots (scripts qui testent les codes, qui envoient des
+       fichiers…) sont refusés par Firebase lui-même. */
+    if (APP_CHECK_CLE) {
+      if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;   // tests en local
+      const C = await import(base + "firebase-app-check.js");
+      C.initializeAppCheck(a, { provider: new C.ReCaptchaV3Provider(APP_CHECK_CLE), isTokenAutoRefreshEnabled: true });
+    }
     const auth = A.getAuth(a);
     await new Promise((ok) => { const stop = A.onAuthStateChanged(auth, () => { stop(); ok(); }); });
     fb = { auth, storage: S.getStorage(a), A, S };
@@ -83,11 +93,11 @@ modal.innerHTML = `
   <form class="prive-box" autocomplete="off" novalidate>
     <div class="prive-cadenas">🔒</div>
     <h3>Espace privé</h3>
-    <p class="prive-sous">Entre le code à 4 chiffres</p>
+    <p class="prive-sous">Entre le code à ${N} chiffres</p>
     <label class="pin">
       <input class="pin-saisie" type="text" inputmode="numeric" pattern="[0-9]*"
-             autocomplete="one-time-code" maxlength="4" enterkeyhint="go" aria-label="Code à 4 chiffres">
-      <span class="pin-case"></span><span class="pin-case"></span><span class="pin-case"></span><span class="pin-case"></span>
+             autocomplete="one-time-code" maxlength="${N}" enterkeyhint="go" aria-label="Code à ${N} chiffres">
+      ${'<span class="pin-case"></span>'.repeat(N)}
     </label>
     <p class="prive-msg" aria-live="polite"></p>
     <button type="button" class="prive-lien prive-annuler">Annuler</button>
@@ -199,28 +209,50 @@ function dessinerPin() {
   casesPin.forEach((c, k) => {
     c.textContent = v[k] ? "•" : "";
     c.classList.toggle("pleine", !!v[k]);
-    c.classList.toggle("courante", actif && k === Math.min(v.length, 3));
+    c.classList.toggle("courante", actif && k === Math.min(v.length, N - 1));
   });
 }
 saisie.addEventListener("input", () => {
-  saisie.value = saisie.value.replace(/\D/g, "").slice(0, 4);
+  saisie.value = saisie.value.replace(/\D/g, "").slice(0, N);
   dessinerPin();
-  if (saisie.value.length === 4) verifier(saisie.value);
+  if (saisie.value.length === N) verifier(saisie.value);
 });
 saisie.addEventListener("focus", dessinerPin);
 saisie.addEventListener("blur", dessinerPin);
 boite.addEventListener("submit", (e) => {
   e.preventDefault();
-  if (saisie.value.length === 4) verifier(saisie.value);
+  if (saisie.value.length === N) verifier(saisie.value);
 });
 
+/* Après 5 codes faux : attente de plus en plus longue (30 s, 1 min, 2 min…, max 30 min).
+   Mémorisé dans le navigateur, donc ça ralentit quelqu'un qui essaie à la main ;
+   contre les vrais robots, ce sont App Check et Firebase qui bloquent (SECURITE.md). */
+const CLE_ESSAIS = "prive-essais";
+const lireEssais = () => { try { return JSON.parse(localStorage.getItem(CLE_ESSAIS)) || { n: 0, jusqua: 0 }; } catch { return { n: 0, jusqua: 0 }; } };
+const ecrireEssais = (e) => { try { localStorage.setItem(CLE_ESSAIS, JSON.stringify(e)); } catch { /* */ } };
+const attenteRestante = () => Math.max(0, lireEssais().jusqua - Date.now());
+function echecCode() {
+  const e = lireEssais();
+  e.n++;
+  if (e.n >= 5) e.jusqua = Date.now() + Math.min(30 * 60e3, 30e3 * 2 ** (e.n - 5));
+  ecrireEssais(e);
+}
+
 async function verifier(code) {
+  const reste = attenteRestante();
+  if (reste) {
+    msg.className = "prive-msg erreur";
+    msg.textContent = `Trop d’essais. Réessaie dans ${reste > 90e3 ? `${Math.ceil(reste / 60e3)} min` : `${Math.ceil(reste / 1e3)} s`}.`;
+    saisie.value = ""; dessinerPin();
+    return;
+  }
   saisie.disabled = true;
   msg.className = "prive-msg";
   msg.textContent = "Vérification…";
   try {
     const { auth, A } = await firebase();
     await A.signInWithEmailAndPassword(auth, COMPTE, code + SUFFIXE);
+    ecrireEssais({ n: 0, jusqua: 0 });
     msg.textContent = "";
     boite.classList.add("ok");
     saisie.blur();
@@ -230,6 +262,7 @@ async function verifier(code) {
       ouvrirPanneau();
     }, 500);
   } catch (e) {
+    if (!["auth/network-request-failed"].includes(e.code)) echecCode();
     boite.classList.remove("secoue");
     void boite.offsetWidth; // relance l'animation
     boite.classList.add("secoue");

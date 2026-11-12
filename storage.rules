@@ -1,0 +1,39 @@
+// Règles de sécurité Firebase Storage — à coller dans
+// Console Firebase > Storage > Règles, puis « Publier ».
+// (Ce fichier dans le dépôt ne s'applique pas tout seul : c'est une copie de référence.)
+//
+// Principe : tout est interdit, sauf ce qui est listé ici.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Le seul compte autorisé à modifier quoi que ce soit (celui de firebase-config.js)
+    function proprio() {
+      return request.auth != null
+        && request.auth.token.email == 'prive@carnet-voyages.com';
+    }
+
+    // Uniquement des photos (< 25 Mo) ou des vidéos (< 500 Mo) :
+    // un robot connecté ne pourrait pas remplir l'espace (et ta facture) avec n'importe quoi
+    function fichierAutorise() {
+      return (request.resource.contentType.matches('image/.*') && request.resource.size < 25 * 1024 * 1024)
+          || (request.resource.contentType.matches('video/.*') && request.resource.size < 500 * 1024 * 1024);
+    }
+
+    // Photos du carnet : visibles par tous les visiteurs, modifiables par toi seul
+    match /carnet/{chemin=**} {
+      allow read: if true;
+      allow create, update: if proprio() && fichierAutorise();
+      allow delete: if proprio();
+    }
+
+    // Espace privé : invisible pour tout le monde sauf toi
+    match /prive/{chemin=**} {
+      allow read: if proprio();
+      allow create, update: if proprio() && fichierAutorise();
+      allow delete: if proprio();
+    }
+
+    // Tout autre dossier : refusé (aucune règle = interdit)
+  }
+}
