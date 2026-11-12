@@ -10,6 +10,7 @@
    ========================================================= */
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const telephone = matchMedia("(max-width: 800px)").matches;
 const borne = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const lisse = (x) => x * x * (3 - 2 * x);
 const doux = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;   // easeInOutCubic
@@ -98,7 +99,8 @@ export async function objets3D() {
     el.className = "plan";
     el.innerHTML = `<img class="plan-net" alt="" decoding="async">`;
     const net = el.querySelector("img");
-    net.src = def.src;
+    // Téléphone : image deux fois plus légère (le panneau y est en fond, très atténué)
+    net.src = telephone ? def.src.replace(/([/-])1920px-/, "$1960px-") : def.src;
     scene.appendChild(el);
     return { rep, el, net, def, cle, chemin: CHEMINS[cle] || CHEMINS.erable, n, vu: false };
   });

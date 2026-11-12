@@ -73,8 +73,12 @@ export function intro() {
   let w = 0, h = 0, dpr = 1;
 
   const redimensionner = () => {
-    dpr = Math.min(2, devicePixelRatio || 1);
-    w = scene.clientWidth; h = scene.clientHeight;
+    const nDpr = Math.min(2, devicePixelRatio || 1);
+    const nW = scene.clientWidth, nH = scene.clientHeight;
+    // sur téléphone, la barre d'adresse qui apparaît/disparaît déclenche « resize » sans cesse :
+    // on ne recrée le canvas (coûteux en mémoire) que si sa taille change vraiment
+    if (nW === w && nH === h && nDpr === dpr) return;
+    dpr = nDpr; w = nW; h = nH;
     canvas.width = w * dpr; canvas.height = h * dpr;
     canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
     besoin = true;

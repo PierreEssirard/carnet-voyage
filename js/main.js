@@ -6,11 +6,11 @@ import { createMap, Carte } from "./map.js?v=9";
 import { itineraire } from "./routing.js?v=6";
 import { suivreDefilement } from "./scroll.js?v=6";
 import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, curseurPhoto, badgeRotatif, suiviDefilement,
-  rotateurHero, apercuSommaire, compteurs, brouillage, aimants, attaques, blocs3D, hud, hudCoord, grain, brume, chargement } from "./effets.js?v=14";
+  rotateurHero, apercuSommaire, compteurs, brouillage, aimants, attaques, blocs3D, hud, hudCoord, grain, brume, chargement } from "./effets.js?v=15";
 import { ll } from "./geo.js?v=5";
-import { intro } from "./intro.js?v=8";
+import { intro } from "./intro.js?v=9";
 import { odometre } from "./odometre.js?v=5";
-import { objets3D } from "./objets.js?v=8";
+import { objets3D } from "./objets.js?v=9";
 import { effetsCarte } from "./carte-fx.js?v=2";
 
 /* 1. Le récit et les effets (avant la carte : le texte s'affiche tout de suite) */
@@ -97,6 +97,14 @@ if (matchMedia("(max-width: 800px)").matches) {
   document.getElementById("map-poignee")?.remove();
   document.body.classList.add("sans-carte");
   await new Promise(() => {});          // on s'arrête là : le récit fonctionne sans la carte
+}
+if (!window.maplibregl) {                // index.html ne le charge que sur grand écran
+  await new Promise((ok, ko) => {
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
+    s.onload = ok; s.onerror = ko;
+    document.head.appendChild(s);
+  });
 }
 map = await createMap("map", MONTREAL.camera);
 const carte = new Carte(map);

@@ -236,7 +236,7 @@ export function badgeRotatif() {
 /** Tout ce qui « suit la page » : bandes de texte qui glissent, badge qui tourne,
     photos qui se penchent selon la vitesse du défilement. */
 export function suiviDefilement() {
-  if (reduceMotion) return;
+  if (reduceMotion || matchMedia("(max-width: 800px)").matches) return;   // téléphone : bandes et badge masqués
   const bandes = [...document.querySelectorAll(".bande")].map((el) => ({ el, l: [...el.children] }));
   const tour = document.querySelector(".badge-tour");
   const visibles = new Set();

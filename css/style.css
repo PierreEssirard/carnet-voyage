@@ -2014,3 +2014,135 @@ main .card { text-shadow: 0 1px 18px rgba(11, 9, 7, .85); }
 .cfx-etalon { mix-blend-mode: normal; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(8, 6, 4, .55)); }
 .cfx-etalon::after { display: none; }
 .cfx-rayons, .cfx-poussiere, .cfx-fuite, .cfx-balayage, .cfx-flare { display: none !important; }
+
+
+/* =========================================================
+   TÉLÉPHONE — lisibilité et stabilité (nov. 2026)
+   Tout est limité aux écrans de 800 px et moins : la version
+   ordinateur ne change pas.
+   Le zoom à deux doigts faisait planter Safari : chaque mot des
+   titres, chaque bande et chaque photo de fond devenait un calque
+   graphique, que le navigateur redessine en très haute résolution
+   quand on zoome. On les supprime ici.
+   ========================================================= */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Anciens iPhone (iOS < 16) : pas de « clip », on coupe autrement */
+@supports not (overflow-x: clip) { html { overflow-x: hidden; } }
+
+@media (max-width: 800px) {
+  /* ---------- Moins de calques graphiques = plus de plantage au zoom ---------- */
+  .bande-l, .galerie, .badge-tour, .rot-mot, .mot > span, .legende .im > span { backface-visibility: visible; }
+  .intro-titre .im > span, .plan img, .bande-l { will-change: auto; }
+  .galerie { transform: none; }                       /* pas d'inclinaison selon la vitesse */
+  .grain, body::after { display: none; }              /* grain et vignette plein écran */
+  main .card { text-shadow: none; }                   /* ombre floue redessinée sur tout le texte */
+  .bande { display: none; }                           /* bandes de 170 % de large : débordaient et décalaient la page */
+  .scene-film::after { background: linear-gradient(180deg, rgba(11, 9, 7, .55), rgba(11, 9, 7, .25) 40%, rgba(11, 9, 7, .6)); }
+
+  /* ---------- Haut de l'écran : un seul titre, pas de chevauchement ---------- */
+  .hud-hd { display: none; }                          /* « Carnet · Archive 02/37 » passait sur le titre */
+  .navbar { padding: env(safe-area-inset-top, 0px) 56px 0; }
+  .navbar-titre { font-size: 14px; }
+  .prive-gear { top: calc(8px + env(safe-area-inset-top, 0px)); }
+
+  /* ---------- Texte : marges régulières, rien ne sort de l'écran ---------- */
+  main {
+    width: 100%;
+    max-width: none;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  }
+  main .card { max-width: 100%; }
+  h1, h2, h3, p, .lead { overflow-wrap: break-word; }
+  h3 { font-size: clamp(26px, 7.4vw, 34px); line-height: 1.1; }
+  p { font-size: 16.5px; line-height: 1.5; }
+  .lead { font-size: 20px; line-height: 1.3; max-width: none; }
+  .card > .k, .chapitre > .k { font-size: 10px; letter-spacing: .18em; line-height: 1.5; }
+  .card > .k::before { flex: none; width: 18px; }
+  .transport { font-size: 11px; letter-spacing: .04em; line-height: 1.6; }
+  .card { margin-bottom: 11vh; }
+  .chapitre { padding-top: 32px; }
+
+  /* Accueil */
+  .h-hero { font-size: clamp(48px, 15vw, 76px); }
+  .date-ligne { flex-wrap: wrap; gap: 10px; margin: 14px 0 22px; }
+  .date-ligne i { width: 40px; }
+  .sommaire a { min-height: 56px; padding: 10px 14px; gap: 12px; }
+  .sommaire strong { font-size: 18px; line-height: 1.2; }
+  .sommaire small { font-size: 9.5px; letter-spacing: .14em; line-height: 1.4; }
+  .sommaire li + li a::before { left: 56px; }
+
+  /* Chiffres clés */
+  .chiffres { gap: 20px 16px; }
+  .chiffres b { font-size: 48px; }
+  .chiffres span { font-size: 9.5px; letter-spacing: .14em; line-height: 1.4; }
+
+  /* ---------- Itinéraire : frise verticale, points bien alignés ---------- */
+  .itineraire {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 14px;
+    padding: 2px 0 2px 28px;
+    margin: 26px 0 12px;
+  }
+  .itineraire::before {
+    top: 8px; bottom: 8px; left: 5px; right: auto;
+    width: 1px; height: auto;
+    background: linear-gradient(180deg, var(--or), rgba(226, 196, 140, .15));
+    transform-origin: top;
+  }
+  .card:not(.vu) .itineraire::before { transform: scaleY(0); }
+  .itineraire span { line-height: 1.4; }
+  .itineraire span::before { top: 50%; left: -28px; margin-top: -6px; width: 12px; height: 12px; background: var(--bg); }
+
+  /* ---------- Photos ---------- */
+  .galerie { gap: 6px; margin-top: 22px; }
+  .galerie.n-4 > :not(:first-child), .galerie.n-5 > :not(:first-child) { grid-column: span 3; aspect-ratio: 4 / 3; }
+  .galerie.n-5 > :last-child { grid-column: span 6; aspect-ratio: 16 / 10; }
+
+  /* ---------- Compteur de km : petite pastille qui ne cache plus le texte ---------- */
+  .odo {
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 12px 8px;
+    border: 1px solid var(--sep);
+    border-radius: 999px;
+    background: rgba(11, 9, 7, .9);
+  }
+  .odo-k { font-size: 8.5px; letter-spacing: .16em; }
+  .odo-n { font-size: 19px; }
+  .odo-plus { left: 4px; right: auto; margin-bottom: 8px; }
+  main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22vh); }
+
+  /* ---------- Fin du carnet ---------- */
+  .defile span { font-size: 44px; }
+  .retour { padding: 14px 18px; }
+  .credits { font-size: 9.5px; }
+
+  /* ---------- Visionneuse ---------- */
+  .lightbox { padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .lightbox img { max-height: 78vh; max-height: 78svh; }
+  .lb-close { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; }
+
+  /* ---------- Intro ---------- */
+  .intro-haut { padding: calc(18px + env(safe-area-inset-top, 0px)) 20px 18px; font-size: 9.5px; letter-spacing: .16em; }
+  .intro-haut::after { left: 20px; right: 20px; }
+  .intro-titre { left: 20px; right: 20px; }
+  .intro-legendes { left: 20px; }
+  .legende-k { font-size: 9.5px; letter-spacing: .16em; }
+  .intro-piste { top: calc(64px + env(safe-area-inset-top, 0px)); }
+  .intro-piste div { width: 46vw; }
+  .intro-bienvenue { font-size: clamp(40px, 12vw, 56px); }
+}
+
+/* Petits téléphones (iPhone SE, mini…) */
+@media (max-width: 380px) {
+  .h-hero { font-size: 46px; }
+  h2, .chapitre h2 { font-size: 34px; }
+  .chiffres b { font-size: 40px; }
+  .intro-titre { font-size: 50px; }
+}
