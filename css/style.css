@@ -2163,3 +2163,10 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* Intro : le titre n'est plus pré-chargé sur la carte graphique */
   .intro-indice i { animation: none; }
 }
+
+/* ---------- Visionneuse : le geste reste dans la visionneuse (zoom sur la photo, page figée) ---------- */
+.lightbox { touch-action: none; overscroll-behavior: contain; overflow: hidden; }
+.lightbox img { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.lb-btn { position: relative; z-index: 2; }
+.lb-close { position: absolute; }
+.lightbox.zoome figcaption { opacity: 0; }

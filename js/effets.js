@@ -139,6 +139,7 @@ export function visionneuse() {
   };
 
   const montrer = (k) => {
+    zoomer(1, 0, 0, false);
     idx = (k + liste.length) % liste.length;
     source = liste[idx];
     img.classList.remove("in");
@@ -156,7 +157,7 @@ export function visionneuse() {
     montrer(liste.indexOf(el));
     img.classList.add("direct");
     lb.classList.add("ouvert");
-    document.body.style.overflow = "hidden";
+    bloquerPage();
     try { await img.decode(); } catch { /* */ }
     img.classList.add("in");
     el.style.visibility = "hidden";
@@ -174,12 +175,13 @@ export function visionneuse() {
     lb.classList.add("ferme");
     img.classList.add("direct");
     if (s) s.style.visibility = "hidden";
+    zoomer(1, 0, 0, false);
     await glisser(true);
     if (s) s.style.visibility = "";
     lb.classList.remove("ouvert", "ferme");
     img.getAnimations().forEach((a) => a.cancel());
     img.classList.remove("in", "direct");
-    document.body.style.overflow = "";
+    debloquerPage();
     occupe = false;
   };
 
@@ -198,15 +200,102 @@ export function visionneuse() {
     if (e.key === "ArrowLeft") montrer(idx - 1);
     if (e.key === "ArrowRight") montrer(idx + 1);
   });
-  let x0 = null, y0 = null;
-  lb.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  /* ---------- Téléphone : zoom à deux doigts sur la photo ----------
+     Le geste est capté par la visionneuse : c'est la photo qui zoome, pas la page
+     (le zoom de toute la page faisait planter Safari), et rien ne défile derrière.
+     Double-toucher : zoom ×2,5 / retour. Glisser : photo suivante, ou vers le bas pour fermer. */
+  let z = 1, tx = 0, ty = 0, geste = null, dernierTap = 0;
+  const borne = (v, a, b) => Math.min(b, Math.max(a, v));
+  function zoomer(nz, nx, ny, anime) {
+    z = nz;
+    // on ne laisse pas la photo sortir du cadre
+    const mx = Math.max(0, (img.offsetWidth * z - innerWidth) / 2);
+    const my = Math.max(0, (img.offsetHeight * z - innerHeight) / 2);
+    tx = z > 1 ? borne(nx, -mx, mx) : 0;
+    ty = z > 1 ? borne(ny, -my, my) : 0;
+    img.style.transition = anime ? "opacity .35s, scale .3s cubic-bezier(.2, .8, .2, 1), translate .3s cubic-bezier(.2, .8, .2, 1)" : "";
+    img.style.scale = z === 1 ? "" : String(z);
+    img.style.translate = z === 1 ? "" : `${tx}px ${ty}px`;
+    lb.classList.toggle("zoome", z > 1);
+  }
+  const ecart = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const milieu = (t) => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+  const centre = () => {               // centre de la photo, sans le déplacement en cours
+    const r = img.getBoundingClientRect();
+    return { x: r.left + r.width / 2 - tx, y: r.top + r.height / 2 - ty };
+  };
+  const unDoigt = (t) => ({ type: z > 1 ? "pan" : "glisser", x0: t.clientX, y0: t.clientY, tx0: tx, ty0: ty });
+
+  lb.addEventListener("touchstart", (e) => {
+    const t = e.touches;
+    if (t.length >= 2) {
+      e.preventDefault();
+      const c = centre(), m = milieu(t);
+      geste = { type: "pince", d0: ecart(t), z0: z, c, px: (m.x - c.x - tx) / z, py: (m.y - c.y - ty) / z };
+    } else geste = unDoigt(t[0]);
+  }, { passive: false });
+
+  lb.addEventListener("touchmove", (e) => {
+    e.preventDefault();                  // pas de défilement ni de zoom de la page derrière
+    if (!geste) return;
+    const t = e.touches;
+    if (geste.type === "pince" && t.length >= 2) {
+      const nz = borne(geste.z0 * ecart(t) / geste.d0, 1, 4);
+      const m = milieu(t);
+      // le point de la photo sous les doigts reste sous les doigts
+      zoomer(nz, m.x - geste.c.x - geste.px * nz, m.y - geste.c.y - geste.py * nz, false);
+    } else if (geste.type === "pan" && t.length === 1) {
+      zoomer(z, geste.tx0 + t[0].clientX - geste.x0, geste.ty0 + t[0].clientY - geste.y0, false);
+    }
+  }, { passive: false });
+
   lb.addEventListener("touchend", (e) => {
-    if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (!geste) return;
+    if (geste.type === "pince") {
+      if (z < 1.08) zoomer(1, 0, 0, true);
+      geste = e.touches.length === 1 ? unDoigt(e.touches[0]) : null;   // un doigt reste : on déplace
+      return;
+    }
+    if (e.touches.length) return;
+    const fin = e.changedTouches[0];
+    const dx = fin.clientX - geste.x0, dy = fin.clientY - geste.y0;
+    const type = geste.type;
+    geste = null;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {          // toucher
+      const now = performance.now();
+      if (now - dernierTap < 320 && e.target === img) {
+        dernierTap = 0;
+        if (z > 1) zoomer(1, 0, 0, true);
+        else {
+          const c = centre(), k = 2.5;
+          zoomer(k, (c.x - fin.clientX) * (k - 1), (c.y - fin.clientY) * (k - 1), true);
+        }
+        e.preventDefault();                // pas de clic fantôme
+      } else dernierTap = now;
+      return;
+    }
+    if (type !== "glisser") return;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) montrer(idx + (dx < 0 ? 1 : -1));
     else if (dy > 80) fermer();          // glisser vers le bas pour fermer, comme Photos
-    x0 = y0 = null;
   });
+  lb.addEventListener("touchcancel", () => { geste = null; });
+  // Safari : bloque le zoom de la page entière pendant que la visionneuse est ouverte
+  ["gesturestart", "gesturechange"].forEach((g) => lb.addEventListener(g, (e) => e.preventDefault()));
+
+  /* Page figée derrière la visionneuse. Sur iPhone, « overflow: hidden » ne suffit pas :
+     on fige le body à sa position puis on la rétablit à la fermeture. */
+  const tactile = matchMedia("(pointer: coarse)").matches;
+  let yFige = 0;
+  function bloquerPage() {
+    if (!tactile) { document.body.style.overflow = "hidden"; return; }
+    yFige = scrollY;
+    Object.assign(document.body.style, { position: "fixed", top: `-${yFige}px`, left: "0", right: "0", overflow: "hidden" });
+  }
+  function debloquerPage() {
+    if (!tactile) { document.body.style.overflow = ""; return; }
+    Object.assign(document.body.style, { position: "", top: "", left: "", right: "", overflow: "" });
+    scrollTo({ top: yFige, behavior: "instant" });
+  }
 }
 
 /** Badge rond qui tourne avec le défilement et affiche le numéro de la section. */
