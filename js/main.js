@@ -10,7 +10,7 @@ import { apparitions, barreProgression, visionneuse, titresAnimes, barreNav, cur
 import { ll } from "./geo.js?v=5";
 import { intro } from "./intro.js?v=9";
 import { odometre } from "./odometre.js?v=5";
-import { objets3D } from "./objets.js?v=9";
+import { objets3D } from "./objets.js?v=10";
 import { effetsCarte } from "./carte-fx.js?v=2";
 
 /* 1. Le récit et les effets (avant la carte : le texte s'affiche tout de suite) */

@@ -74,6 +74,19 @@ export async function objets3D() {
   const reperes = [...document.querySelectorAll(".objet3d[data-objet]")];
   if (!reperes.length) return;
 
+  /* Crédits des photos (bas du carnet) */
+  const fin = [...document.querySelectorAll("#story .chapitre")].pop();
+  if (fin && !document.querySelector(".credits")) {
+    const vus = [...new Set(reperes.map((r) => r.dataset.objet))].map((k) => PHOTOS[k]).filter(Boolean);
+    fin.insertAdjacentHTML("beforeend", `<p class="credits">Photos : ${vus.map((p) =>
+      `<a href="${p.page}" target="_blank" rel="noopener">${p.titre}</a> © ${p.auteur} (${p.licence})`).join(" · ")} — via Wikimedia Commons.</p>`);
+  }
+
+  /* Téléphone : pas de panneau photo en fond. Ce grand calque fixe (avec ses masques
+     de fondu) était redessiné en très haute résolution au zoom et faisait planter Safari. */
+  if (telephone) return;
+
+
   /* Le panneau photo : fixe, à droite, fondu dans le noir */
   const scene = document.createElement("div");
   scene.className = "scene-film";
@@ -99,19 +112,10 @@ export async function objets3D() {
     el.className = "plan";
     el.innerHTML = `<img class="plan-net" alt="" decoding="async">`;
     const net = el.querySelector("img");
-    // Téléphone : image deux fois plus légère (le panneau y est en fond, très atténué)
-    net.src = telephone ? def.src.replace(/([/-])1920px-/, "$1960px-") : def.src;
+    net.src = def.src;
     scene.appendChild(el);
     return { rep, el, net, def, cle, chemin: CHEMINS[cle] || CHEMINS.erable, n, vu: false };
   });
-
-  /* Crédits des photos (bas du carnet) */
-  const fin = [...document.querySelectorAll("#story .chapitre")].pop();
-  if (fin && !document.querySelector(".credits")) {
-    const vus = [...new Set(reperes.map((r) => r.dataset.objet))].map((k) => PHOTOS[k]).filter(Boolean);
-    fin.insertAdjacentHTML("beforeend", `<p class="credits">Photos : ${vus.map((p) =>
-      `<a href="${p.page}" target="_blank" rel="noopener">${p.titre}</a> © ${p.auteur} (${p.licence})`).join(" · ")} — via Wikimedia Commons.</p>`);
-  }
 
   /* Étendue de chaque chapitre (remesurée seulement si la page change de taille) */
   let bornes = [];

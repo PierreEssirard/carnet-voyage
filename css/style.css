@@ -2146,3 +2146,20 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .chiffres b { font-size: 40px; }
   .intro-titre { font-size: 50px; }
 }
+
+/* ---------- Téléphone : plus aucun grand calque plein écran (plantage au zoom) ----------
+   Au zoom, Safari redessine chaque calque fixe ou animé à la taille zoomée :
+   un calque plein écran zoomé ×5 sur un iPhone pèse plusieurs centaines de Mo. */
+@media (max-width: 800px) {
+  .scene-film, .fumee-canvas, .hud { display: none !important; }
+  /* Animations pilotées par le défilement (accueil, photos, vidéo) : coupées */
+  .hero .card, .galerie > *, .galerie img, .video { animation: none !important; }
+  /* Noms des lieux à la fin : liste fixe au lieu d'une bande infinie animée et masquée */
+  .defile { -webkit-mask-image: none; mask-image: none; overflow: visible; }
+  .defile-piste { display: block; width: auto; animation: none !important; }
+  .defile-piste span { white-space: normal; font-size: 26px; line-height: 1.3; color: #4a4033; }
+  .defile-piste span + span { display: none; }
+  .defile i { display: inline-block; }             /* crée un point de coupure entre deux lieux */
+  /* Intro : le titre n'est plus pré-chargé sur la carte graphique */
+  .intro-indice i { animation: none; }
+}
